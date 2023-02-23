@@ -2,7 +2,7 @@
 
 A simple program that queries the logs from New Relic's GraphQL API.
 
-Written in rust. Deployable as a docker container.
+Written in Rust. Deployable as a Docker container.
 
 ### Requirements
 
@@ -13,5 +13,5 @@ Written in rust. Deployable as a docker container.
   - NRLS_ACCOUNT_ID: New Relic Account ID
   - NRLS_API_KEY: New Relic API Key
   - REDIS_URL: Redis URL with port
-
+  - LS_SVC_PORT: (optional) App server port (defaults to 3333)
 

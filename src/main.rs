@@ -1,42 +1,66 @@
-use new_relic::NewRelic;
+//! # Log Scraper
+//!
+//! Handles fetching, persisting, and managing logs sourced from a third party service.
+//!
+//! # Description
+//!
+//! Starts an HTTP server and provides endpoints for pulling down, saving, and managing log messages.
+//! 
+//! ### Purpose
+//!
+//! The `LogScraper` implementation was built as a workaround for the limitations of 
+//! log message retention policies provided by log aggregator services. Especially
+//! those of free tier plans.
+//!
+//! ## Notes
+//!
+//! See the `server::sync_logs_endpoint` for fetching the latest logs from the remote server.
+//! Health check endpoint for testing if API is live or not is here: `server::health_check_endpoint`.
+//! 
+//! ## Environment Variables
+//!
+//! - `NRLS_ACCOUNT_ID`: New Relic Account ID
+//! - `NRLS_API_KEY`: New Relic API Key
+//! - `REDIS_URL`: Redis URL with port
+//! - `LS_SVC_PORT`: (optional) App server port (defaults to `3333`)
+
+use std::env;
+use actix_web::{App, HttpServer, web};
 
 mod caching;
 mod new_relic;
+// mod storage;
+mod scraper;
+mod server;
 
-
-async fn run_log_sync(last_seen: &str) {
-    // if found, we want to use it for our query for fetching logs
-    if last_seen.len() > 0 {
-        println!("found last_seen value in cache: {:?}", last_seen);
-        // TODO: handle last_seen date from cache flow
-        // return;
-    }
-
-    // otherwise fetch logs from a sensible date and cache last_seen
-    println!("last_seen is empty. fetching reords now...");
-    let nr = NewRelic::new();
-
-    // TODO: specify since date for query
-    let log_results = nr.get_logs().await;
-
-    if log_results.data.actor.account.nrql.results.len() > 0 {
-        let first_row = log_results.data.actor.account.nrql.results.get(0).unwrap();
-        let watermark = nr.to_watermark(first_row);
-        println!("setting last_seen to timestamp: {}", watermark);
-        match caching::set_cached_val(watermark).await {
-            Ok(()) => println!("Success: saved cached value successfully."),
-            Err(_) => println!("Error: unable to save cached value!"),
+#[actix_web::main]
+async fn main() -> std::io::Result<()> {
+    // allow overriding the port via environment variable
+    let default_port = "3333".to_owned();
+    let port = {
+        match env::var("LS_SVC_PORT") {
+            Ok(t) => t,
+            Err(_) => default_port.clone(),
         }
-    }
+    };
 
-    nr.print_logs(log_results);
-}
-
-#[tokio::main]
-async fn main() {
-    // check last_seen cached value
-    match caching::get_cached_val().await {
-        Ok(last_seen) =>  run_log_sync(&last_seen).await,
-        Err(err) => panic!("An error occurred: {:?}", err),
+    // parse the port and start the server
+    println!("Starting server on port {}", port);
+    match port.parse::<u16>() {
+        Ok(port_number) => {
+            HttpServer::new(|| {
+                App::new()
+                    .service(server::health_check_endpoint)
+                    .service(server::echo_endpoint)
+                    .service(
+                        web::scope("/logs")
+                            .service(server::sync_logs_endpoint)
+                    )
+            })
+            .bind(("0.0.0.0", port_number))?
+            .run()
+            .await
+        }
+        Err(err) => panic!("Error starting the server: {:?}", err),
     }
 }

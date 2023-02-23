@@ -11,10 +11,12 @@ fi
 
 
 # link the redis container when running the log-scraper
-REDIS_URL='redis:6379' docker run -i \
+REDIS_URL='redis:6379' LS_SVC_PORT='3333' docker run -i \
   -e NRLS_ACCOUNT_ID \
   -e NRLS_API_KEY \
   -e REDIS_URL \
+  -e LS_SVC_PORT \
+  -p 3333:3333 \
   --link some-redis:redis \
   willko/log-scraper:latest
 
