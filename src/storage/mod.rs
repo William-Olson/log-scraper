@@ -1,26 +1,18 @@
-//! # Caching Utilities Module
+//! # Storage Module
 //!
-//! Handles connection to redis and chaching values.
+//! Handles saving and reading files to disk.
 //!
 //! ## Path
 //!
-//! caching/mod.rs
+//! storage/mod.rs
 //!
 //! # Description
 //!
-//! Allows caching a value via Redis using the REDIS_CACH_KEY.
-
-use std::env;
+//! Allows storing a value via Redis using the REDIS_CACH_KEY.
 
 use chrono::NaiveDate;
 
-pub const LOG_DIRECTORY: &'static str = "LOG_DIRECTORY";
-pub const LOG_FILE_PREFIX: &'static str = "LOG_FILE_PREFIX";
-pub const LOG_FILE_EXTENSION: &'static str = "LOG_FILE_EXTENSION";
-
-pub const FALLBACK_LOG_PREFIX: &'static str = "scraped";
-pub const FALLBACK_LOG_EXT: &'static str = "log";
-pub const FALLBACK_LOG_DIRECTORY: &'static str = ".";
+use crate::env_config::{self, LOG_FILE_EXTENSION, LOG_FILE_PREFIX};
 
 /// Returns the list of log filenames.
 /// Reads and returns the list of currently residing log files on the filesystem
@@ -61,22 +53,12 @@ pub fn to_new_file(filename: &str, data: &str) -> bool {
 /// to avoid collisions.
 pub fn to_filename(timestamp: NaiveDate) -> String {
     // TODO: centralize environment variable names to one location
-    let ext = {
-        match env::var(LOG_FILE_EXTENSION) {
-            Ok(t) => t,
-            Err(_) => FALLBACK_LOG_EXT.to_owned(),
-        }
-    };
-    let prefix = {
-        match env::var(LOG_FILE_PREFIX) {
-            Ok(t) => t,
-            Err(_) => FALLBACK_LOG_PREFIX.to_owned(),
-        }
-    };
+    let ext = env_config::get_var_else(LOG_FILE_EXTENSION, "log");
+    let prefix = env_config::get_var_else(LOG_FILE_PREFIX, "app");
 
-    let proposedFilename = format!("{}_{}_log.{}", prefix, timestamp.format("%Y-%m-%d"), ext);
+    let proposed_name = format!("{}_{}_log.{}", prefix, timestamp.format("%Y-%m-%d"), ext);
 
     // TODO: ensure filename doesn't already exist and increment with a number until we have
     // a unique filename to use
-    proposedFilename
+    proposed_name
 }

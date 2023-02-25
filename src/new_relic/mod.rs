@@ -13,9 +13,10 @@
 
 use serde::{Deserialize, Serialize};
 use serde_json::to_string;
-use std::{env};
 use reqwest::{header::{HeaderMap, HeaderValue} };
 use chrono::{serde::ts_milliseconds, DateTime, Utc};
+
+use crate::env_config::{get_var_else, NRLS_ACCOUNT_ID, NRLS_API_KEY};
 
 
 #[derive(Deserialize, Serialize)]
@@ -50,9 +51,6 @@ pub struct NrqlResponseData {
 pub struct NrqlResponse {
     pub data: NrqlResponseData,
 }
-
-pub const NRLS_ACCOUNT_ID: &'static str = "NRLS_ACCOUNT_ID";
-pub const NRLS_API_KEY: &'static str = "NRLS_API_KEY";
 
 
 /// Creates a New Relic Graphql Request Payload with the given Account
@@ -97,20 +95,8 @@ impl NewRelic {
 
       // use environment variables if present, else fallback to undefined string
       let fallback_value = "undefined".to_owned();
-
-      // TODO: centralize environment variable names to one location
-      let nrls_id = {
-          match env::var(NRLS_ACCOUNT_ID) {
-              Ok(t) => t,
-              Err(_) => fallback_value.clone(),
-          }
-      };
-      let nrls_key = {
-          match env::var(NRLS_API_KEY) {
-              Ok(t) => t,
-              Err(_) => fallback_value.clone(),
-          }
-      };
+      let nrls_id = get_var_else(NRLS_ACCOUNT_ID, &fallback_value.clone());
+      let nrls_key = get_var_else(NRLS_API_KEY, &fallback_value.clone());
 
       // construct request body with the graphql query
       let query: String = create_nrql_payload(&nrls_id, "SELECT * FROM Log SINCE 3 DAYS AGO");
