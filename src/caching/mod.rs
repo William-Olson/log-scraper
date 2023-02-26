@@ -30,7 +30,10 @@ async fn get_val(key_name: &str) -> Result<String> {
     let result = client.get(key_name).await?;
 
     match result {
-        Some(v) => Ok(format!("{:?}", v)),
+        Some(val_bytes) => {
+            let val = std::str::from_utf8(val_bytes.as_ref()).unwrap_or(&"");
+            Ok(val.to_owned())
+        }
         None => Ok("".to_owned()),
     }
 }
