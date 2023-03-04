@@ -1,7 +1,8 @@
 
 use actix_web::{get, delete, HttpResponse, Responder};
+use chrono::Utc;
 
-use crate::{scraper, api::api_types::SimpleResponse};
+use crate::{scraper, api::api_types::{SimpleResponse, LogListResponse}, storage};
 
 /// Attempts to add logs to the filesystem from a remote server.
 /// Fetches logs from remote server and saves them to disk.
@@ -15,15 +16,15 @@ pub async fn sync_logs_endpoint() -> impl Responder {
 /// returns them.
 #[get("/")]
 pub async fn get_log_list_endpoint() -> impl Responder {
-    // TODO: implement this
-    HttpResponse::Ok().json(SimpleResponse::new())
+    let resp = storage::get_log_filenames().await;
+    HttpResponse::Ok().json(LogListResponse::new(resp))
 }
 
 /// Attempts to read a log file's contents and return results
 /// in a paged response structure.
 #[get("/{id}")]
 pub async fn get_log_contents_endpoint() -> impl Responder {
-    // TODO: implement this
+    // TODO: implement this with pagination
     HttpResponse::Ok().json(SimpleResponse::new())
 }
 

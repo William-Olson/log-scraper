@@ -13,6 +13,7 @@ pub async fn attempt_sync() {
     let nr = NewRelic::new();
     let log_results = nr.get_logs(&last_seen).await;
 
+    // TODO: clean up / flatten the response structure in the NewRelic module
     if log_results.data.actor.account.nrql.results.len() > 0 {
         let first_row = log_results.data.actor.account.nrql.results.get(0).unwrap();
         let watermark = nr.to_watermark(first_row);

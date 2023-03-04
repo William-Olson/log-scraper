@@ -33,7 +33,7 @@ mod env_config;
 mod new_relic;
 mod scraper;
 mod api;
-// mod storage;
+mod storage;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
