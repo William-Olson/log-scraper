@@ -12,10 +12,9 @@
 
 mod types;
 
-use reqwest::header::{HeaderMap, HeaderValue};
 use crate::env_config::{get_var_else, NRLS_ACCOUNT_ID, NRLS_API_KEY};
-use crate::new_relic::types::{NrqlResponse, NrqlResultItem};
-
+use crate::new_relic::types::{NewRelicLogItem, NrqlResponse};
+use reqwest::header::{HeaderMap, HeaderValue};
 
 /// Creates a New Relic Graphql Request Payload with the given Account
 /// ID and simple NRQL expression.
@@ -53,7 +52,32 @@ impl NewRelic {
     ///
     /// Requires Account ID (`NRLS_ACCOUNT_ID`) and API key
     /// (`NRLS_API_KEY`) to be set via environment variables.
-    pub async fn get_logs(&self, timestamp_millis: &str) -> NrqlResponse {
+    pub async fn logs_since(&self, timestamp: &str) -> Vec<NewRelicLogItem> {
+        let resp = self.get_logs(timestamp).await;
+        let mut logs = resp.data.actor.account.nrql.results;
+
+        if logs.len() == 0 {
+            return logs;
+        }
+
+        // ensure logs are sorted by timestamp
+        logs.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
+
+        // return logs if no filtering is needed
+        if timestamp.is_empty() {
+            return logs;
+        }
+
+        // otherwise filter out any seen logs if they come back in the response
+        let filtered: Vec<NewRelicLogItem> = logs
+            .into_iter()
+            .filter(|row| row.timestamp.timestamp_millis().to_string() == timestamp)
+            .collect::<Vec<NewRelicLogItem>>();
+        filtered
+    }
+
+    // Makes an http call to fetch logs from New Relic API.
+    async fn get_logs(&self, timestamp_millis: &str) -> NrqlResponse {
         println!("... ** Fetching logs ** ...");
 
         // use environment variables if present, else fallback to undefined string
@@ -101,14 +125,34 @@ impl NewRelic {
         };
     }
 
+    /// Helper for determining the log item with the latest timestamp in a list.
+    /// Caution: panics! if the list is empty.
+    pub fn find_latest(&self, logs: &Vec<NewRelicLogItem>) -> NewRelicLogItem {
+        if logs.is_empty() {
+            panic!("Unable to find latest log from empty list");
+        }
+
+        let mut found = &logs[0];
+        logs.iter().for_each(|l| {
+            if l.timestamp > found.timestamp {
+                found = l;
+            }
+        });
+
+        found.to_owned()
+    }
+
     /// Helper for printing logs to the console.
-    pub fn print_logs(&self, log_response: NrqlResponse) {
+    pub fn print_logs(&self, log_results: &Vec<NewRelicLogItem>) {
         println!("Logs: \n-------\n");
-        let mut logs: Vec<NrqlResultItem> = log_response.data.actor.account.nrql.results;
-        logs.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
-        logs.iter().for_each(|row| {
+
+        // clone the logs and make mutable so we can sort it
+        let mut logs_copy = log_results.clone();
+
+        // sort and print the logs
+        logs_copy.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
+        logs_copy.iter().for_each(|row| {
             let t = row.timestamp.to_rfc3339();
-            // let mut log_message = to_string(&row).unwrap_or("".to_owned());
             let mut log_message = row.message.clone();
 
             // clean up the logged string first
@@ -123,8 +167,8 @@ impl NewRelic {
         println!("\n\n");
     }
 
-    /// Get the timestamp in milliseconds of the NrqlResultItem to use as a watermark
-    pub fn to_watermark(&self, r: &NrqlResultItem) -> String {
+    /// Get the timestamp in milliseconds of the NewRelicLogItem to use as a watermark
+    pub fn to_watermark(&self, r: &NewRelicLogItem) -> String {
         // TODO: increment the timestamp by one ms?
         format!("{}", r.timestamp.timestamp_millis())
     }

@@ -19,20 +19,23 @@
 //!
 //! ## Environment Variables
 //!
+//! There are multiple important environment variables that need to be configured.
+//! Critical ones listed below but see the `env_config` module for full list of 
+//! available and required ones.
+//!
 //! - `NRLS_ACCOUNT_ID`: New Relic Account ID
 //! - `NRLS_API_KEY`: New Relic API Key
 //! - `REDIS_URL`: Redis URL with port
 //! - `LS_SVC_PORT`: (optional) App server port (defaults to `3333`)
 
-use actix_web::{web, App, HttpServer};
+use actix_web::{web, App, HttpServer, middleware::Logger};
+use crate::env_config::{get_var_else, LS_SVC_PORT};
 
-use crate::env_config::{LS_SVC_PORT, get_var_else};
-
+mod api;
 mod caching;
 mod env_config;
 mod new_relic;
 mod scraper;
-mod api;
 mod storage;
 
 #[actix_web::main]
@@ -47,6 +50,7 @@ async fn main() -> std::io::Result<()> {
         Ok(port_number) => {
             HttpServer::new(|| {
                 App::new()
+                    .wrap(Logger::new("%t %r (PID=%P) (IP=%a) %{User-Agent}i (time = %Ds)"))
                     .service(api::index_api::health_check_endpoint)
                     .service(api::index_api::echo_endpoint)
                     .service(api::index_api::version_endpoint)

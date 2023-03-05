@@ -1,5 +1,5 @@
 use chrono::Utc;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 /// Simple HTTP Response structure for relaying status back to the requester.
 #[derive(Serialize)]
@@ -14,6 +14,22 @@ pub struct LogListResponse {
     pub ok: bool,
     pub timestamp: String,
     pub log_files: Vec<String>,
+}
+
+/// Query parameters for requesting a paginated resource.
+#[derive(Deserialize)]
+pub struct PageParams {
+    pub page: u32,
+    pub page_size: u32,
+}
+
+/// Paginated resource response.
+#[derive(Serialize)]
+pub struct PagedLogContents {
+    pub page: u32,
+    pub page_size: u32,
+    pub total: u32,
+    pub results: Vec<String>,
 }
 
 impl LogListResponse {
@@ -31,6 +47,12 @@ impl SimpleResponse {
         SimpleResponse {
             ok: true,
             message: "success".to_owned(),
+        }
+    }
+    pub fn from(ok_status: bool, resp_msg: &str) -> SimpleResponse {
+        SimpleResponse {
+            ok: ok_status,
+            message: resp_msg.to_owned(),
         }
     }
 }
