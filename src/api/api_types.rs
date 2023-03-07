@@ -8,7 +8,7 @@ pub struct SimpleResponse {
     pub message: String,
 }
 
-/// Simple HTTP Response structure for relaying status back to the requester.
+/// Response that contains a list of existing log filenames on the system.
 #[derive(Serialize)]
 pub struct LogListResponse {
     pub ok: bool,
@@ -57,7 +57,7 @@ impl SimpleResponse {
     }
 }
 
-/// Simple HTTP Response structure for relaying status back to the requester.
+/// A response structure that contains the current version of `log-scraper`.
 #[derive(Serialize)]
 pub struct VersionResponse {
     pub version: String,

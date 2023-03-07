@@ -12,7 +12,7 @@
 
 mod types;
 
-use crate::env_config::{get_var_else, NRLS_ACCOUNT_ID, NRLS_API_KEY};
+use crate::env_config::{EnvConfig, NRLS_ACCOUNT_ID, NRLS_API_KEY};
 use crate::new_relic::types::{NewRelicLogItem, NrqlResponse};
 use reqwest::header::{HeaderMap, HeaderValue};
 
@@ -79,11 +79,9 @@ impl NewRelic {
     // Makes an http call to fetch logs from New Relic API.
     async fn get_logs(&self, timestamp_millis: &str) -> NrqlResponse {
         println!("... ** Fetching logs ** ...");
-
-        // use environment variables if present, else fallback to undefined string
-        let fallback_value = "undefined".to_owned();
-        let nrls_id = get_var_else(NRLS_ACCOUNT_ID, &fallback_value.clone());
-        let nrls_key = get_var_else(NRLS_API_KEY, &fallback_value.clone());
+        let env = EnvConfig::global();
+        let nrls_id = env.get_val(NRLS_ACCOUNT_ID);
+        let nrls_key = env.get_val(NRLS_API_KEY);
 
         // construct request payload with the graphql query
         // fallback to 7 days ago if timestamp not found

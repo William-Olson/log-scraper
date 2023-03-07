@@ -8,14 +8,14 @@
 //!
 //! ### Purpose
 //!
-//! The `LogScraper` implementation was built as a workaround for the limitations of
+//! This service implementation was built as a workaround for the limitations of
 //! log message retention policies provided by log aggregator services. Especially
 //! those of free tier plans.
 //!
 //! ## Notes
 //!
-//! See the `server::sync_logs_endpoint` for fetching the latest logs from the remote server.
-//! Health check endpoint for testing if API is live or not is here: `server::health_check_endpoint`.
+//! See the `api::logs_api::sync_logs_endpoint` for fetching the latest logs from the remote server.
+//! Health check endpoint for testing if API is live or not is here: `api::index_api::health_check_endpoint`.
 //!
 //! ## Environment Variables
 //!
@@ -29,7 +29,7 @@
 //! - `LS_SVC_PORT`: (optional) App server port (defaults to `3333`)
 
 use actix_web::{web, App, HttpServer, middleware::Logger};
-use crate::env_config::{get_var_else, LS_SVC_PORT};
+use crate::env_config::{CONFIG, EnvConfig, LS_SVC_PORT};
 
 mod api;
 mod caching;
@@ -40,9 +40,14 @@ mod storage;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    // allow overriding the port via environment variable
-    let default_port = "3333".to_owned();
-    let port = get_var_else(LS_SVC_PORT, &default_port);
+    // initialize the environment config
+    match CONFIG.set(EnvConfig::new()) {
+        Ok(_) => println!("Loaded config successfully"),
+        Err(_) => panic!("Error loading config!"),
+    }
+
+    // get server port from environment variables or defaults
+    let port = EnvConfig::global().get_val(LS_SVC_PORT);
 
     // parse the port and start the server
     println!("Starting server on port {}", port);

@@ -1,3 +1,9 @@
+//! # Scraper Module
+//! 
+//! Attempts to sync and persist logs found on the remote server.
+
+
+
 use crate::{caching, new_relic::NewRelic, storage};
 
 /// Attempts to sync local logs from the remote log service

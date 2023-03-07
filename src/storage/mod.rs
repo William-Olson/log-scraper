@@ -16,7 +16,7 @@ use std::path::{Path, PathBuf};
 use tokio::fs::{File, OpenOptions};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 
-use crate::env_config::{self, LOG_DIRECTORY, LOG_FILE_EXTENSION, LOG_FILE_PREFIX};
+use crate::env_config::{EnvConfig, LOG_DIRECTORY, LOG_FILE_EXTENSION, LOG_FILE_PREFIX};
 
 /// New line character to check when reading files
 const LF: u8 = '\n' as u8;
@@ -30,15 +30,15 @@ async fn should_rollover(filename: &str) -> bool {
 }
 
 fn get_log_dir() -> String {
-    env_config::get_var_else(LOG_DIRECTORY, "./")
+    EnvConfig::global().get_val(LOG_DIRECTORY)
 }
 
 fn get_log_ext() -> String {
-    env_config::get_var_else(LOG_FILE_EXTENSION, "log")
+    EnvConfig::global().get_val(LOG_FILE_EXTENSION)
 }
 
 fn get_log_prefix() -> String {
-    env_config::get_var_else(LOG_FILE_PREFIX, "app")
+    EnvConfig::global().get_val(LOG_FILE_PREFIX)
 }
 
 fn get_log_path(filename: &str) -> PathBuf {

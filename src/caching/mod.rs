@@ -15,13 +15,10 @@ use mini_redis::{
     Result,
 };
 
-use crate::env_config::{get_var_else, REDIS_KEY_NAME, REDIS_URL};
-
-pub const REDIS_CACHE_KEY: &'static str = "last_seen_timestamp";
+use crate::env_config::{EnvConfig, REDIS_KEY_NAME, REDIS_URL};
 
 pub async fn get_redis_client() -> Result<Client> {
-    let default_url = "127.0.0.1:6379".to_owned();
-    let redis_url = get_var_else(REDIS_URL, &default_url);
+    let redis_url = EnvConfig::global().get_val(REDIS_URL);
     client::connect(redis_url).await
 }
 
@@ -45,12 +42,12 @@ async fn set_val(key_name: &str, val: String) -> Result<()> {
 }
 
 pub async fn get_cached_val() -> Result<String> {
-    let key_name = get_var_else(REDIS_KEY_NAME, REDIS_CACHE_KEY);
+    let key_name = EnvConfig::global().get_val(REDIS_KEY_NAME);
     Ok(get_val(&key_name).await?)
 }
 
 pub async fn set_cached_val(val: String) -> Result<()> {
-    let key_name = get_var_else(REDIS_KEY_NAME, REDIS_CACHE_KEY);
+    let key_name = EnvConfig::global().get_val(REDIS_KEY_NAME);
     set_val(&key_name, val).await?;
     Ok(())
 }
