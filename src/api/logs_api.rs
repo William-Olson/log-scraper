@@ -1,3 +1,28 @@
+//! # Logs Api module
+//!
+//! Provides endpoints for accessing and managing logs.
+//! 
+//! ## get_log_contents_endpoint
+//!
+//! Attempts to read a log file's contents and return results
+//!  in a paged response structure.
+//! 
+//! ### Example Response 
+//! 
+//! GET `http://localhost:3333/logs/app_2023-01-01.log?page=1&page_size=100`
+//! 
+//! ```
+//! 
+//! {
+//!     "page": 1,
+//!     "page_size": 100,
+//!     "total": 2,
+//!     "results": [
+//!       "<file-contents-from-line-one>",
+//!       "<file-contents-from-line-two>"
+//!     ]
+//! }
+//! ```
 
 use actix_web::{get, delete, HttpResponse, Responder, web::{Path, Query}};
 
@@ -26,6 +51,7 @@ pub async fn get_log_contents_endpoint(paging: Query<PageParams>, id: Path<Strin
     println!("Looking for file with name {}", id);
 
     // parse the query params for page and page_size
+    // TODO: make these optional
     if paging.page_size <= 0 {
         return HttpResponse::BadRequest().json(SimpleResponse::from(false, "Error parsing page_size parameter."));
     }

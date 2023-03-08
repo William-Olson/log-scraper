@@ -1,6 +1,20 @@
-//! # env_config
+//! # EnvConfig Module
 //!
 //! Handles access of configuration including environment variables.
+//!
+//! ## Path
+//!
+//! env_config.rs
+//!
+//! # Description
+//!
+//! This module allows retrieving configuration values read from environment
+//! variables and defines the fallback values when environment variables are
+//! not present.
+//!
+//! ## Notes
+//!
+//! Defines a `CONFIG` instance to be set only once on app start.
 
 use once_cell::sync::OnceCell;
 use std::{collections::HashMap, env};

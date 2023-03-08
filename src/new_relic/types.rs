@@ -1,3 +1,15 @@
+//! # New Relic Types Module
+//!
+//! A module for defining types used for interacting with New Relic API.
+//!
+//! ## Path
+//!
+//! new_relic/types.rs
+//!
+//! # Description
+//!
+//! Defines the response structures coming back from a New Relic API query.
+
 use chrono::{serde::ts_milliseconds, DateTime, Utc};
 use serde::{Deserialize, Serialize};
 

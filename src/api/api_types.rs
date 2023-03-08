@@ -1,7 +1,11 @@
+//! # Api Types Module
+//!
+//! Defines API data models and helper methods.
+
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 
-/// Simple HTTP Response structure for relaying status back to the requester.
+/// Response structure for relaying a status and message back to the requester.
 #[derive(Serialize)]
 pub struct SimpleResponse {
     pub ok: bool,
@@ -33,6 +37,7 @@ pub struct PagedLogContents {
 }
 
 impl LogListResponse {
+    /// Create a new LogListResponse with given logs.
     pub fn new(logs: Vec<String>) -> LogListResponse {
         LogListResponse {
             ok: true,
@@ -43,12 +48,14 @@ impl LogListResponse {
 }
 
 impl SimpleResponse {
+    /// Creates a SimpleResponse struct with default values (ok=true, message="success").
     pub fn new() -> SimpleResponse {
         SimpleResponse {
             ok: true,
             message: "success".to_owned(),
         }
     }
+    /// Creates a SimpleResponse struct with given status and message.
     pub fn from(ok_status: bool, resp_msg: &str) -> SimpleResponse {
         SimpleResponse {
             ok: ok_status,
@@ -64,6 +71,7 @@ pub struct VersionResponse {
 }
 
 impl VersionResponse {
+    /// Creates a new VersionResponse struct from the given version.
     pub fn new(s: String) -> VersionResponse {
         VersionResponse { version: s }
     }

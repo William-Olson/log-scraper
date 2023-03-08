@@ -33,7 +33,7 @@ pub async fn attempt_sync() {
           Ok(()) => {
             println!("Successfully wrote logs to {} √", filename);
             let line_count = storage::total_lines(&filename).await.unwrap_or(0);
-            print!("Total lines in file: {}", line_count)
+            println!("Total lines in file: {}", line_count)
           },
           Err(err) => println!("Warning: An error occurred saving logs to file: {:?}", err),
         }

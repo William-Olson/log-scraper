@@ -1,13 +1,15 @@
 //! # API Module
-//! 
+//!
 //! Provides endpoint implementations for API requests.
 
-
-
+/// Module that defines API data structures.
 pub mod api_types;
-pub mod index_api;
-pub mod logs_api;
 
+/// Module for API root endpoints.
+pub mod index_api;
+
+/// Module for the Logs API endpoints.
+pub mod logs_api;
 
 // // expose sub modules at this scope
 // pub use index_api::echo_endpoint;
