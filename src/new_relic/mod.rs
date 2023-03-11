@@ -47,8 +47,8 @@ pub struct NewRelic {}
 impl NewRelic {
     /// Creates a new `NewRelic` struct.
     pub fn new() -> NewRelic {
-        let new_instance = NewRelic {};
-        new_instance
+        
+        NewRelic {}
     }
 
     /// Fetches logs from `api.newrelic.com/graphiql`.
@@ -161,7 +161,7 @@ impl NewRelic {
             let mut log_message = row.message.clone();
 
             // clean up the logged string first
-            log_message = log_message.replace("\\", "");
+            log_message = log_message.replace('\\', "");
 
             // log to console
             println!(

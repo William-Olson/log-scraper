@@ -61,7 +61,7 @@ impl Clone for NewRelicLogItem {
             message: self.message.clone(),
             message_id: self.message_id.clone(),
             project: self.project.clone(),
-            timestamp: self.timestamp.clone(),
+            timestamp: self.timestamp,
         }
     }
 }

@@ -183,7 +183,7 @@ pub async fn get_filename(timestamp: DateTime<Utc>) -> String {
 pub async fn get_lines_by_page(filename: &str, page: u32, lines_per_page: u32) -> Vec<String> {
     let mut f = File::open(get_log_path(filename))
         .await
-        .expect(&format!("Couldn't open the file: {filename}"));
+        .unwrap_or_else(|_| panic!("Couldn't open the file: {filename}"));
 
     let mut cursor = 0;
     let mut results: Vec<String> = Vec::new();

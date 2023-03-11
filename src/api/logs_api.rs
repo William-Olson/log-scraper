@@ -97,7 +97,7 @@ pub async fn get_log_contents_endpoint(
     event!(Level::INFO, "Looking for file with name {id}");
 
     // sanitize id so they can't traverse directories
-    let sanitized = id.replace("/", "");
+    let sanitized = id.replace('/', "");
     let page = paging.page.unwrap_or(1);
     let page_size = paging.page_size.unwrap_or(100);
 
@@ -150,7 +150,7 @@ pub async fn get_log_contents_endpoint(
 #[instrument(name = "delete_log_endpoint")]
 pub async fn delete_log_endpoint(id: Path<String>) -> impl Responder {
     event!(Level::INFO, "Deleting log file with name {id}");
-    let sanitized = id.replace("/", "");
+    let sanitized = id.replace('/', "");
 
     // validate file exists
     if !storage::has_file(&sanitized) {
