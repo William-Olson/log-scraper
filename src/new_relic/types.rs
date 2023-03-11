@@ -13,7 +13,7 @@
 use chrono::{serde::ts_milliseconds, DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 
 pub struct NewRelicLogItem {
@@ -54,7 +54,7 @@ pub struct NrqlResponse {
 
 impl Clone for NewRelicLogItem {
     fn clone(&self) -> NewRelicLogItem {
-        let l = NewRelicLogItem {
+        NewRelicLogItem {
             logger_name: self.logger_name.clone(),
             request_id: self.request_id.clone(),
             logtype: self.logtype.clone(),
@@ -62,8 +62,7 @@ impl Clone for NewRelicLogItem {
             message_id: self.message_id.clone(),
             project: self.project.clone(),
             timestamp: self.timestamp.clone(),
-        };
-        l
+        }
     }
 }
 

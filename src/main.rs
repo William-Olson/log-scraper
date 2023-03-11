@@ -20,7 +20,7 @@
 //! ## Environment Variables
 //!
 //! There are multiple important environment variables that need to be configured.
-//! Critical ones listed below but see the `env_config` module for full list of 
+//! Critical ones listed below but see the `env_config` module for full list of
 //! available and required ones.
 //!
 //! - `NRLS_ACCOUNT_ID`: New Relic Account ID
@@ -28,8 +28,11 @@
 //! - `REDIS_URL`: Redis URL with port
 //! - `LS_SVC_PORT`: (optional) App server port (defaults to `3333`)
 
-use actix_web::{web, App, HttpServer, middleware::Logger};
-use crate::env_config::{CONFIG, EnvConfig, LS_SVC_PORT};
+use crate::env_config::{EnvConfig, CONFIG, LOG_DIRECTORY, LS_SVC_PORT};
+use actix_files as fs;
+use actix_web::{middleware::Logger, web, web::Data, App, HttpServer};
+use tracing::{event, instrument, Level};
+use tracing_subscriber::fmt::format;
 
 mod api;
 mod caching;
@@ -38,29 +41,71 @@ mod new_relic;
 mod scraper;
 mod storage;
 
+use std::sync::Mutex;
+
+#[derive(Debug)]
+pub struct LogScraperState {
+    last_seen: Mutex<String>, // last seen log timestamp in milliseconds
+}
+
 #[actix_web::main]
+#[instrument(name = "log_scraper")]
 async fn main() -> std::io::Result<()> {
+    // register a log subscriber to print events & messages to stdout
+    tracing_subscriber::fmt()
+        .compact()
+        // exclude fields (except message) for now
+        .fmt_fields(format::debug_fn(|writer, field, field_data| {
+            if field.to_string() != "message" {
+                return Ok(());
+            }
+            write!(writer, "{field_data:?}")
+        }))
+        .with_file(true)
+        .with_line_number(true)
+        .with_thread_ids(true)
+        .with_target(true)
+        .init();
+
     // initialize the environment config
     match CONFIG.set(EnvConfig::new()) {
-        Ok(_) => println!("Loaded config successfully"),
+        Ok(_) => event!(Level::INFO, "Loaded config successfully"),
         Err(_) => panic!("Error loading config!"),
     }
+
+    // setup our logging storage area
+    storage::ensure_log_directory().await?;
+
+    // create our app state
+    let app_state: Data<LogScraperState> = Data::new(LogScraperState {
+        last_seen: Mutex::new("".to_owned()),
+    });
 
     // get server port from environment variables or defaults
     let port = EnvConfig::global().get_val(LS_SVC_PORT);
 
     // parse the port and start the server
-    println!("Starting server on port {}", port);
+    event!(Level::INFO, "Starting server on port {port}");
     match port.parse::<u16>() {
         Ok(port_number) => {
-            HttpServer::new(|| {
+            HttpServer::new(move || {
                 App::new()
-                    .wrap(Logger::new("%t %r (PID=%P) (IP=%a) %{User-Agent}i (time = %Ds)"))
+                    .wrap(Logger::new("%t %r (IP=%a) %{User-Agent}i (time = %D ms)"))
                     .service(api::index_api::health_check_endpoint)
-                    .service(api::index_api::echo_endpoint)
                     .service(api::index_api::version_endpoint)
                     .service(
+                        // allow viewing log files directly
+                        fs::Files::new("/files", EnvConfig::global().get_val(LOG_DIRECTORY))
+                            .show_files_listing(),
+                    )
+                    .service(
+                        // serve docs as well
+                        fs::Files::new("/docs", "./docs")
+                            .show_files_listing(),
+                    )
+                    .service(
                         web::scope("/logs")
+                            .app_data(app_state.clone())
                             .service(api::logs_api::sync_logs_endpoint)
                             .service(api::logs_api::get_log_list_endpoint)
                             .service(api::logs_api::get_log_contents_endpoint),

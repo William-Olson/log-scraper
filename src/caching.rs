@@ -4,7 +4,7 @@
 //!
 //! ## Path
 //!
-//! caching/mod.rs
+//! caching.rs
 //!
 //! # Description
 //!
@@ -43,7 +43,7 @@ async fn set_val(key_name: &str, val: String) -> Result<()> {
 
 pub async fn get_cached_val() -> Result<String> {
     let key_name = EnvConfig::global().get_val(REDIS_KEY_NAME);
-    Ok(get_val(&key_name).await?)
+    get_val(&key_name).await
 }
 
 pub async fn set_cached_val(val: String) -> Result<()> {

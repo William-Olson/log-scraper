@@ -14,7 +14,9 @@ mod types;
 
 use crate::env_config::{EnvConfig, NRLS_ACCOUNT_ID, NRLS_API_KEY};
 use crate::new_relic::types::{NewRelicLogItem, NrqlResponse};
+use chrono::Duration;
 use reqwest::header::{HeaderMap, HeaderValue};
+use tracing::{info, instrument};
 
 /// Creates a New Relic Graphql Request Payload with the given Account
 /// ID and simple NRQL expression.
@@ -39,6 +41,7 @@ fn create_nrql_payload(account_id: &str, query: &str) -> String {
     result_str
 }
 
+#[derive(Debug)]
 pub struct NewRelic {}
 
 impl NewRelic {
@@ -52,6 +55,7 @@ impl NewRelic {
     ///
     /// Requires Account ID (`NRLS_ACCOUNT_ID`) and API key
     /// (`NRLS_API_KEY`) to be set via environment variables.
+    #[instrument(name = "logs_since")]
     pub async fn logs_since(&self, timestamp: &str) -> Vec<NewRelicLogItem> {
         let resp = self.get_logs(timestamp).await;
         let mut logs = resp.data.actor.account.nrql.results;
@@ -77,8 +81,9 @@ impl NewRelic {
     }
 
     // Makes an http call to fetch logs from New Relic API.
+    #[instrument(name = "get_logs")]
     async fn get_logs(&self, timestamp_millis: &str) -> NrqlResponse {
-        println!("... ** Fetching logs ** ...");
+        info!("... ** Fetching logs ** ...");
         let env = EnvConfig::global();
         let nrls_id = env.get_val(NRLS_ACCOUNT_ID);
         let nrls_key = env.get_val(NRLS_API_KEY);
@@ -90,9 +95,9 @@ impl NewRelic {
         } else {
             timestamp_millis.to_owned()
         };
-        let log_query = format!("SELECT * FROM Log SINCE {}", since);
+        let log_query = format!("SELECT * FROM Log SINCE {since}");
         let nrql_payload: String = create_nrql_payload(&nrls_id, &log_query);
-        println!("Constructed query: {}", nrql_payload);
+        info!("Constructed query: {nrql_payload}");
 
         // set api key in headers
         assert!(!nrls_key.is_empty(), "API Header Key is Missing!");
@@ -116,7 +121,7 @@ impl NewRelic {
                 // return match res.json::<NrqlResponse>().await {
                 return match serde_json::from_str::<NrqlResponse>(&body_text) {
                     Ok(j) => j,
-                    Err(ei) => panic!("Error parsing response: \n{:?} \n{:?}", body_text, ei),
+                    Err(ei) => panic!("Error parsing response: \n{body_text:?} \n{ei:?}"),
                 };
             }
             Err(e) => panic!("Error sending request: {:?}", e),
@@ -167,7 +172,8 @@ impl NewRelic {
 
     /// Get the timestamp in milliseconds of the NewRelicLogItem to use as a watermark
     pub fn to_watermark(&self, r: &NewRelicLogItem) -> String {
-        // TODO: increment the timestamp by one ms?
-        format!("{}", r.timestamp.timestamp_millis())
+        // increment the timestamp by one ms
+        let d = r.timestamp + Duration::milliseconds(1);
+        format!("{}", d.timestamp_millis())
     }
 }

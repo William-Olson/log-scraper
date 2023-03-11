@@ -1,18 +1,34 @@
 //! # Logs Api module
 //!
 //! Provides endpoints for accessing and managing logs.
-//! 
+//!
+//! ## get_log_list_endpoint
+//!
+//! Responds with a list of log files currently residing on the filesystem.
+//!
+//! GET `http://localhost:3333/logs/`
+//!
+//! ```
+//!
+//! {
+//!     "ok": true,
+//!     "timestamp": "2023-01-02T00:00:00.000000+00:00",
+//!     "log_files": [
+//!       "app_2023-01-01.log",
+//!       "app_2023-01-02.log"
+//!     ]
+//! }
+//! ```
+//!
 //! ## get_log_contents_endpoint
 //!
 //! Attempts to read a log file's contents and return results
 //!  in a paged response structure.
-//! 
-//! ### Example Response 
-//! 
+//!
 //! GET `http://localhost:3333/logs/app_2023-01-01.log?page=1&page_size=100`
-//! 
+//!
 //! ```
-//! 
+//!
 //! {
 //!     "page": 1,
 //!     "page_size": 100,
@@ -24,15 +40,27 @@
 //! }
 //! ```
 
-use actix_web::{get, delete, HttpResponse, Responder, web::{Path, Query}};
+use actix_web::{
+    delete, get,
+    web::{Path, Query, Data},
+    HttpResponse, Responder,
+};
+use tracing::{instrument, event, Level};
 
-use crate::{scraper, api::api_types::{SimpleResponse, LogListResponse, PageParams, PagedLogContents}, storage};
+use crate::{
+    api::api_types::{LogListResponse, PageParams, PagedLogContents, SimpleResponse},
+    scraper, storage, LogScraperState,
+};
 
 /// Attempts to add logs to the filesystem from a remote server.
 /// Fetches logs from remote server and saves them to disk.
 #[get("/sync")]
-pub async fn sync_logs_endpoint() -> impl Responder {
-    scraper::attempt_sync().await;
+#[instrument(name="sync_logs_endpoint")]
+pub async fn sync_logs_endpoint(app_state: Data<LogScraperState>) -> impl Responder {
+    match scraper::run_sync(app_state).await {
+            Ok(_) => event!(Level::INFO, "Sync Complete!"),
+            Err(err) => event!(Level::ERROR, "An error occurred while running the sync: {err:?}"),
+    };
     HttpResponse::Ok().json(SimpleResponse::new())
 }
 
@@ -47,46 +75,73 @@ pub async fn get_log_list_endpoint() -> impl Responder {
 /// Attempts to read a log file's contents and return results
 /// in a paged response structure.
 #[get("/{id}")]
-pub async fn get_log_contents_endpoint(paging: Query<PageParams>, id: Path<String>) -> impl Responder {
-    println!("Looking for file with name {}", id);
+#[instrument(name="get_log_contents_endpoint")]
+pub async fn get_log_contents_endpoint(
+    paging: Query<PageParams>,
+    id: Path<String>,
+) -> impl Responder {
+    event!(Level::INFO, "Looking for file with name {id}");
 
-    // parse the query params for page and page_size
-    // TODO: make these optional
-    if paging.page_size <= 0 {
-        return HttpResponse::BadRequest().json(SimpleResponse::from(false, "Error parsing page_size parameter."));
+    // sanitize id so they can't traverse directories
+    let sanitized = id.replace("/", "");
+    let page = match paging.page {
+        Some(pg) => pg,
+        None => 1,
+    };
+    let page_size = match paging.page_size {
+        Some(pg_sz) => pg_sz,
+        None => 100,
+    };
+
+    // sanity check on page and page_size
+    if page == 0 {
+        return HttpResponse::BadRequest()
+            .json(SimpleResponse::from(false, "Invalid value for page parameter."));
     }
-    if paging.page <= 0 {
-        return HttpResponse::BadRequest().json(SimpleResponse::from(false, "Error parsing page parameter."));
+    if page_size == 0 {
+        return HttpResponse::BadRequest().json(SimpleResponse::from(
+            false,
+            "Invalid value for page_size parameter.",
+        ));
     }
 
     // validate file exists
-    if !storage::has_file(&id) {
-        return HttpResponse::NotFound().json(SimpleResponse::from(false, &format!("Unable to find file with name {}", id)));
+    if !storage::has_file(&sanitized) {
+        event!(Level::ERROR, "Unable to find file with name {sanitized}");
+        return HttpResponse::NotFound().json(SimpleResponse::from(
+            false,
+            "Unable to find file",
+        ));
     }
 
     // read the contents of the file
-    match storage::total_lines(&id).await {
+    match storage::total_lines(&sanitized).await {
         Ok(total) => {
-            let lines = storage::get_lines_by_page(&id, paging.page, paging.page_size).await;
-            HttpResponse::Ok().json(PagedLogContents{
+            let lines = storage::get_lines_by_page(&sanitized, page, page_size).await;
+            HttpResponse::Ok().json(PagedLogContents {
                 total: total.try_into().unwrap_or(0),
                 results: lines,
-                page: paging.page,
-                page_size: paging.page_size
+                page,
+                page_size,
             })
-        },
+        }
         Err(err) => {
-            println!("Warning: error occurred reading lines from file {} \n{:?}", &id, err);
-            HttpResponse::InternalServerError().json(SimpleResponse::from(false, "Error occurred while reading file"))
-        },
+            event!(Level::ERROR,
+                "An error occurred reading lines from file {sanitized} \n{err:?}"
+            );
+            HttpResponse::InternalServerError().json(SimpleResponse::from(
+                false,
+                "Error occurred while reading the file",
+            ))
+        }
     }
-
 }
 
 /// Attempts to delete a log file.
 #[delete("/{id}")]
+#[instrument(name="delete_log_endpoint")]
 pub async fn delete_log_endpoint(id: Path<String>) -> impl Responder {
     // TODO: implement this
-    println!("Deleting log file with name {}", id);
+    event!(Level::INFO, "Deleting log file with name {id}");
     HttpResponse::Ok().json(SimpleResponse::new())
 }

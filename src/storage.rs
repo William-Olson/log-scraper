@@ -1,16 +1,17 @@
 //! # Storage Module
 //!
-//! Handles saving and reading files to disk.
+//! Handles saving and reading files to and from disk.
 //!
 //! ## Path
 //!
-//! storage/mod.rs
+//! storage.rs
 //!
 //! # Description
 //!
-//! Allows storing a value via Redis using the REDIS_CACH_KEY.
+//! Allows reading and writing data to files.
 
 use chrono::{DateTime, Utc};
+use tracing::{instrument, event, Level};
 use std::cmp;
 use std::path::{Path, PathBuf};
 use tokio::fs::{File, OpenOptions};
@@ -21,6 +22,8 @@ use crate::env_config::{EnvConfig, LOG_DIRECTORY, LOG_FILE_EXTENSION, LOG_FILE_P
 /// New line character to check when reading files
 const LF: u8 = '\n' as u8;
 
+/// Determines whether the given filename should be written to or the name
+/// should be rolled over to another filename.
 async fn should_rollover(filename: &str) -> bool {
     has_file(filename) && {
         let max_lines_per_file: usize = 1000;
@@ -45,7 +48,8 @@ fn get_log_path(filename: &str) -> PathBuf {
     Path::new(&get_log_dir()).join(filename)
 }
 
-async fn ensure_log_directory() -> tokio::io::Result<()> {
+/// Creates the directory set via LOG_DIRECTORY configuration if it doesn't exist.
+pub async fn ensure_log_directory() -> tokio::io::Result<()> {
     let dir_name = get_log_dir();
     let p = Path::new(&dir_name);
     if !p.exists() {
@@ -73,13 +77,14 @@ async fn write_to_new_file(filename: &str, data: &str) -> tokio::io::Result<()> 
 /// Returns the list of log filenames.
 /// Reads and returns the list of currently residing log files on the filesystem
 /// under the folder configured via the `LOG_DIRECTORY` environment setting.
+#[instrument(name="get_log_filenames")]
 pub async fn get_log_filenames() -> Vec<String> {
     let mut result: Vec<String> = Vec::new();
 
     let log_location = get_log_dir();
     let p = Path::new(&log_location);
     if !p.exists() {
-        println!("Error: folder does not exist: {}", log_location);
+        event!(Level::ERROR, "Error: folder does not exist: {log_location}");
         return result;
     }
 

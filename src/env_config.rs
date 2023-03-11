@@ -18,6 +18,7 @@
 
 use once_cell::sync::OnceCell;
 use std::{collections::HashMap, env};
+use tracing::{event, instrument, Level};
 
 /// The cell to init and hold the config instance (only writable once).
 pub static CONFIG: OnceCell<EnvConfig> = OnceCell::new();
@@ -41,6 +42,7 @@ pub const LOG_FILE_EXTENSION: &'static str = "LOG_FILE_EXTENSION";
 
 /// Internal struct of `env_config` module for managing loading of environment
 /// variables and mapping them if provided else falling back to defaults.
+#[derive(Debug)]
 pub struct EnvConfig<'a> {
     pub config: HashMap<&'a str, String>,
 }
@@ -66,16 +68,17 @@ impl EnvConfig<'_> {
     }
 
     /// Reads environment variables and updates config values.
+    #[instrument(name = "read_env_config")]
     pub fn read_env_config(&mut self) {
-        let keys = self.config.keys().map(|c| *c).collect::<Vec<&str>>();
+        let keys = self.config.keys().copied().collect::<Vec<&str>>();
         for k in keys {
             match env::var(k) {
                 Ok(val) => {
-                    println!("Loaded config from environment for '{}'", k);
+                    event!(Level::INFO, "Loaded config value {k} (environment)");
                     self.config.insert(k, val);
                 }
                 Err(_) => {
-                    println!("{}", &format!("Using default config value for '{}'", k));
+                    event!(Level::WARN, "Loaded config value {k}");
                 }
             };
         }
@@ -91,7 +94,7 @@ impl EnvConfig<'_> {
         }
         match self.config.get(env_var) {
             Some(val) => val.to_owned(),
-            None => panic!("Config value for '{}' not found!", &env_var),
+            None => panic!("Config value for '{env_var}' not found!"),
         }
     }
 

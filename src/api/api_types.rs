@@ -21,10 +21,10 @@ pub struct LogListResponse {
 }
 
 /// Query parameters for requesting a paginated resource.
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct PageParams {
-    pub page: u32,
-    pub page_size: u32,
+    pub page: Option<u32>,
+    pub page_size: Option<u32>,
 }
 
 /// Paginated resource response.
