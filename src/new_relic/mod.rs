@@ -60,7 +60,7 @@ impl NewRelic {
         let resp = self.get_logs(timestamp).await;
         let mut logs = resp.data.actor.account.nrql.results;
 
-        if logs.len() == 0 {
+        if logs.is_empty() {
             return logs;
         }
 
@@ -114,6 +114,8 @@ impl NewRelic {
             .body(nrql_payload)
             .send();
 
+        // TODO: Remove the panics from bad request calls & json parsing. 
+        //       Possibly fail softly or return errors
         match response.await {
             Ok(res) => {
                 let body_text = res.text().await.expect("Failed retrieving body");
@@ -124,7 +126,7 @@ impl NewRelic {
                     Err(ei) => panic!("Error parsing response: \n{body_text:?} \n{ei:?}"),
                 };
             }
-            Err(e) => panic!("Error sending request: {:?}", e),
+            Err(e) => panic!("Error sending request: {e:?}"),
         };
     }
 
@@ -146,11 +148,11 @@ impl NewRelic {
     }
 
     /// Helper for printing logs to the console.
-    pub fn print_logs(&self, log_results: &Vec<NewRelicLogItem>) {
+    pub fn print_logs(&self, log_results: &[NewRelicLogItem]) {
         println!("Logs: \n-------\n");
 
         // clone the logs and make mutable so we can sort it
-        let mut logs_copy = log_results.clone();
+        let mut logs_copy = log_results.to_owned();
 
         // sort and print the logs
         logs_copy.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));

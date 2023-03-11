@@ -64,7 +64,7 @@ async fn attempt_sync(timestamp_from_memory: String) -> String {
     let log_results = nr.logs_since(&last_seen).await;
 
     // bail if there are no new logs to sync
-    if log_results.len() == 0 {
+    if log_results.is_empty() {
         // but make sure we cache the value to stay in sync
         info!("No logs found. Caching old timestamp to remote: {last_seen}");
         save_to_cache(last_seen.clone()).await;

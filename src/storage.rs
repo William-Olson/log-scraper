@@ -20,7 +20,7 @@ use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use crate::env_config::{EnvConfig, LOG_DIRECTORY, LOG_FILE_EXTENSION, LOG_FILE_PREFIX};
 
 /// New line character to check when reading files
-const LF: u8 = '\n' as u8;
+const LF: u8 = b'\n';
 
 /// Determines whether the given filename should be written to or the name
 /// should be rolled over to another filename.
@@ -105,8 +105,7 @@ pub async fn get_log_filenames() -> Vec<String> {
 
 /// Determines whether the file at the given filename exists or not.
 pub fn has_file(filename: &str) -> bool {
-    let exists = get_log_path(filename).exists();
-    exists == true
+    get_log_path(filename).exists()
 }
 
 /// Writes a string to a file. Appends if file already exists.
@@ -118,7 +117,7 @@ pub async fn write_to_file(filename: &str, data: &str) -> tokio::io::Result<()> 
     if !has_file(filename) {
         write_to_new_file(filename, data).await
     } else {
-        let data_with_newline = format!("\n{}", data);
+        let data_with_newline = format!("\n{data}");
         append_to_file(filename, &data_with_newline).await
     }
 }
@@ -163,7 +162,7 @@ pub async fn get_filename(timestamp: DateTime<Utc>) -> String {
     let prefix = get_log_prefix();
     let base_name = format!("{}_{}", prefix, timestamp.format("%Y-%m-%d"));
 
-    let mut proposed_name = format!("{}.{}", base_name, ext);
+    let mut proposed_name = format!("{base_name}.{ext}");
     let mut incrementor = 0;
 
     // allow using existing filename based on rollover policy else increment with number
@@ -173,7 +172,7 @@ pub async fn get_filename(timestamp: DateTime<Utc>) -> String {
             break;
         }
         incrementor += 1;
-        proposed_name = format!("{}_{}.{}", base_name, incrementor, ext);
+        proposed_name = format!("{base_name}_{incrementor}.{ext}");
     }
     proposed_name
 }
@@ -184,7 +183,7 @@ pub async fn get_filename(timestamp: DateTime<Utc>) -> String {
 pub async fn get_lines_by_page(filename: &str, page: u32, lines_per_page: u32) -> Vec<String> {
     let mut f = File::open(get_log_path(filename))
         .await
-        .expect(&format!("Couldn't open the file: {}", filename));
+        .expect(&format!("Couldn't open the file: {filename}"));
 
     let mut cursor = 0;
     let mut results: Vec<String> = Vec::new();
@@ -204,10 +203,10 @@ pub async fn get_lines_by_page(filename: &str, page: u32, lines_per_page: u32) -
             reader
                 .read_until(LF, &mut buffer)
                 .await
-                .expect(&format!("Problem reading lines in file {}!", filename));
+                .unwrap_or_else(|_| panic!("Problem reading lines in file {filename}!"));
 
-            if buffer.len() > 0 && cursor == normalized_page {
-                results.push(std::str::from_utf8(&buffer).unwrap_or(&"").to_owned());
+            if !buffer.is_empty() && cursor == normalized_page {
+                results.push(std::str::from_utf8(&buffer).unwrap_or("").to_owned());
             }
         }
 

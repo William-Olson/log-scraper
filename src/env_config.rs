@@ -24,21 +24,21 @@ use tracing::{event, instrument, Level};
 pub static CONFIG: OnceCell<EnvConfig> = OnceCell::new();
 
 /// `api` env var name: the port the service will be served at.
-pub const LS_SVC_PORT: &'static str = "LS_SVC_PORT";
+pub const LS_SVC_PORT: &str = "LS_SVC_PORT";
 /// `caching` env var name: the url redis is accessible at.
-pub const REDIS_URL: &'static str = "REDIS_URL";
+pub const REDIS_URL: &str = "REDIS_URL";
 /// `caching` env var name: the hash_key to store the last seen timestamp under.
-pub const REDIS_KEY_NAME: &'static str = "REDIS_KEY_NAME";
+pub const REDIS_KEY_NAME: &str = "REDIS_KEY_NAME";
 /// `new_relic` env var name: the id of the new relic account the logs reside under.
-pub const NRLS_ACCOUNT_ID: &'static str = "NRLS_ACCOUNT_ID";
+pub const NRLS_ACCOUNT_ID: &str = "NRLS_ACCOUNT_ID";
 /// `new_relic` env var name: the API key required to access the new relic query service endpoint.
-pub const NRLS_API_KEY: &'static str = "NRLS_API_KEY";
+pub const NRLS_API_KEY: &str = "NRLS_API_KEY";
 /// `storage` env var name: the location of where logs are stored on the system.
-pub const LOG_DIRECTORY: &'static str = "LOG_DIRECTORY";
+pub const LOG_DIRECTORY: &str = "LOG_DIRECTORY";
 /// `storage` env var name: filename prefix for saving log files.
-pub const LOG_FILE_PREFIX: &'static str = "LOG_FILE_PREFIX";
+pub const LOG_FILE_PREFIX: &str = "LOG_FILE_PREFIX";
 /// `storage` env var name: the extension to use when saving log files.
-pub const LOG_FILE_EXTENSION: &'static str = "LOG_FILE_EXTENSION";
+pub const LOG_FILE_EXTENSION: &str = "LOG_FILE_EXTENSION";
 
 /// Internal struct of `env_config` module for managing loading of environment
 /// variables and mapping them if provided else falling back to defaults.

@@ -115,6 +115,6 @@ async fn main() -> std::io::Result<()> {
             .run()
             .await
         }
-        Err(err) => panic!("Error starting the server: {:?}", err),
+        Err(err) => panic!("Error starting the server: {err:?}"),
     }
 }

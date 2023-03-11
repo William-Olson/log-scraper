@@ -98,14 +98,8 @@ pub async fn get_log_contents_endpoint(
 
     // sanitize id so they can't traverse directories
     let sanitized = id.replace("/", "");
-    let page = match paging.page {
-        Some(pg) => pg,
-        None => 1,
-    };
-    let page_size = match paging.page_size {
-        Some(pg_sz) => pg_sz,
-        None => 100,
-    };
+    let page = paging.page.unwrap_or(1);
+    let page_size = paging.page_size.unwrap_or(100);
 
     // sanity check on page and page_size
     if page == 0 {
@@ -167,7 +161,7 @@ pub async fn delete_log_endpoint(id: Path<String>) -> impl Responder {
     match storage::delete_file(&sanitized).await {
         Ok(_) => HttpResponse::Ok().json(SimpleResponse::from(
             true,
-            &format!("Deleted {} successfully", id),
+            &format!("Deleted {id} successfully"),
         )),
         Err(err) => {
             event!(Level::ERROR, "Unable to delete file {sanitized} \n{err:?}");
