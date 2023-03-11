@@ -9,7 +9,6 @@
 //! GET `http://localhost:3333/logs/`
 //!
 //! ```
-//!
 //! {
 //!     "ok": true,
 //!     "timestamp": "2023-01-02T00:00:00.000000+00:00",
@@ -28,7 +27,6 @@
 //! GET `http://localhost:3333/logs/app_2023-01-01.log?page=1&page_size=100`
 //!
 //! ```
-//!
 //! {
 //!     "page": 1,
 //!     "page_size": 100,
@@ -39,13 +37,26 @@
 //!     ]
 //! }
 //! ```
+//!
+//! ## delete_log_endpoint
+//!
+//! Deletes the log file on disk and returns a success message.
+//!
+//! DELETE `http://localhost:3333/logs/app_2023-01-01.log`
+//!
+//! ```
+//! {
+//!     "message" : "Deleted app_2023-01-01.log successfully",
+//!     "ok" : true
+//! }
+//! ```
 
 use actix_web::{
     delete, get,
-    web::{Path, Query, Data},
+    web::{Data, Path, Query},
     HttpResponse, Responder,
 };
-use tracing::{instrument, event, Level};
+use tracing::{event, instrument, Level};
 
 use crate::{
     api::api_types::{LogListResponse, PageParams, PagedLogContents, SimpleResponse},
@@ -55,11 +66,14 @@ use crate::{
 /// Attempts to add logs to the filesystem from a remote server.
 /// Fetches logs from remote server and saves them to disk.
 #[get("/sync")]
-#[instrument(name="sync_logs_endpoint")]
+#[instrument(name = "sync_logs_endpoint")]
 pub async fn sync_logs_endpoint(app_state: Data<LogScraperState>) -> impl Responder {
     match scraper::run_sync(app_state).await {
-            Ok(_) => event!(Level::INFO, "Sync Complete!"),
-            Err(err) => event!(Level::ERROR, "An error occurred while running the sync: {err:?}"),
+        Ok(_) => event!(Level::INFO, "Sync Complete!"),
+        Err(err) => event!(
+            Level::ERROR,
+            "An error occurred while running the sync: {err:?}"
+        ),
     };
     HttpResponse::Ok().json(SimpleResponse::new())
 }
@@ -75,7 +89,7 @@ pub async fn get_log_list_endpoint() -> impl Responder {
 /// Attempts to read a log file's contents and return results
 /// in a paged response structure.
 #[get("/{id}")]
-#[instrument(name="get_log_contents_endpoint")]
+#[instrument(name = "get_log_contents_endpoint")]
 pub async fn get_log_contents_endpoint(
     paging: Query<PageParams>,
     id: Path<String>,
@@ -95,8 +109,10 @@ pub async fn get_log_contents_endpoint(
 
     // sanity check on page and page_size
     if page == 0 {
-        return HttpResponse::BadRequest()
-            .json(SimpleResponse::from(false, "Invalid value for page parameter."));
+        return HttpResponse::BadRequest().json(SimpleResponse::from(
+            false,
+            "Invalid value for page parameter.",
+        ));
     }
     if page_size == 0 {
         return HttpResponse::BadRequest().json(SimpleResponse::from(
@@ -108,10 +124,7 @@ pub async fn get_log_contents_endpoint(
     // validate file exists
     if !storage::has_file(&sanitized) {
         event!(Level::ERROR, "Unable to find file with name {sanitized}");
-        return HttpResponse::NotFound().json(SimpleResponse::from(
-            false,
-            "Unable to find file",
-        ));
+        return HttpResponse::NotFound().json(SimpleResponse::from(false, "Unable to find file"));
     }
 
     // read the contents of the file
@@ -126,7 +139,8 @@ pub async fn get_log_contents_endpoint(
             })
         }
         Err(err) => {
-            event!(Level::ERROR,
+            event!(
+                Level::ERROR,
                 "An error occurred reading lines from file {sanitized} \n{err:?}"
             );
             HttpResponse::InternalServerError().json(SimpleResponse::from(
@@ -139,9 +153,28 @@ pub async fn get_log_contents_endpoint(
 
 /// Attempts to delete a log file.
 #[delete("/{id}")]
-#[instrument(name="delete_log_endpoint")]
+#[instrument(name = "delete_log_endpoint")]
 pub async fn delete_log_endpoint(id: Path<String>) -> impl Responder {
-    // TODO: implement this
     event!(Level::INFO, "Deleting log file with name {id}");
-    HttpResponse::Ok().json(SimpleResponse::new())
+    let sanitized = id.replace("/", "");
+
+    // validate file exists
+    if !storage::has_file(&sanitized) {
+        event!(Level::ERROR, "Unable to find file with name {sanitized}");
+        return HttpResponse::NotFound().json(SimpleResponse::from(false, "Unable to find file"));
+    }
+
+    match storage::delete_file(&sanitized).await {
+        Ok(_) => HttpResponse::Ok().json(SimpleResponse::from(
+            true,
+            &format!("Deleted {} successfully", id),
+        )),
+        Err(err) => {
+            event!(Level::ERROR, "Unable to delete file {sanitized} \n{err:?}");
+            HttpResponse::InternalServerError().json(SimpleResponse::from(
+                false,
+                "Error occurred while deleting the file",
+            ))
+        }
+    }
 }

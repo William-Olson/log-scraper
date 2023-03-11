@@ -100,14 +100,14 @@ async fn main() -> std::io::Result<()> {
                     )
                     .service(
                         // serve docs as well
-                        fs::Files::new("/docs", "./docs")
-                            .show_files_listing(),
+                        fs::Files::new("/docs", "./docs").show_files_listing(),
                     )
                     .service(
                         web::scope("/logs")
                             .app_data(app_state.clone())
                             .service(api::logs_api::sync_logs_endpoint)
                             .service(api::logs_api::get_log_list_endpoint)
+                            .service(api::logs_api::delete_log_endpoint)
                             .service(api::logs_api::get_log_contents_endpoint),
                     )
             })

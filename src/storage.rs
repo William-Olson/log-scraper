@@ -123,6 +123,16 @@ pub async fn write_to_file(filename: &str, data: &str) -> tokio::io::Result<()> 
     }
 }
 
+#[instrument(name="delete_file")]
+pub async fn delete_file(filename: &str) -> tokio::io::Result<()> {
+    if !has_file(filename) {
+        event!(Level::ERROR, "Unable to read file: {filename}");
+        return Ok(());
+    }
+
+    tokio::fs::remove_file(get_log_path(filename)).await
+}
+
 /// Reads total lines of a file.
 pub async fn total_lines(filename: &str) -> tokio::io::Result<usize> {
     let file = OpenOptions::new()
