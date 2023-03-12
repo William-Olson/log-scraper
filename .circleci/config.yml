@@ -13,6 +13,9 @@ jobs:
       - run:
           name: Build the Project
           command: cargo build
+      - run:
+          name: Lint the Project
+          command: cargo clippy
       - slack/notify:
           channel: circle-ci
           event: fail
