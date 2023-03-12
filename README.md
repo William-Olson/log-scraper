@@ -18,6 +18,7 @@ Written in Rust. Deployable as a Docker container.
 | `LOG_DIRECTORY`      | `"./"`                  | The location of where logs are stored on the system. |
 | `LOG_FILE_PREFIX`    | `"app"`                 | The filename prefix for saving log files.            |
 | `LOG_FILE_EXTENSION` | `"log"`                 | The extension to use when saving log files.          |
+| `LS_POLL_SCHEDULE`   | `"0 1/5 * * * *"`       | The schedule to poll the remote server for new logs. |
 | `LS_SVC_PORT`        | `"3333"`                | The port the service will be served at.              |
 | `NRLS_ACCOUNT_ID`    | `""`                    | New Relic Account ID                                 |
 | `NRLS_API_KEY`       | `""`                    | New Relic API Key                                    |

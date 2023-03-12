@@ -16,7 +16,7 @@ use crate::env_config::{EnvConfig, NRLS_ACCOUNT_ID, NRLS_API_KEY};
 use crate::new_relic::types::{NewRelicLogItem, NrqlResponse};
 use chrono::Duration;
 use reqwest::header::{HeaderMap, HeaderValue};
-use tracing::{info, instrument};
+use tracing::{instrument, trace};
 
 /// Creates a New Relic Graphql Request Payload with the given Account
 /// ID and simple NRQL expression.
@@ -83,7 +83,7 @@ impl NewRelic {
     // Makes an http call to fetch logs from New Relic API.
     #[instrument(name = "get_logs")]
     async fn get_logs(&self, timestamp_millis: &str) -> NrqlResponse {
-        info!("... ** Fetching logs ** ...");
+        trace!("... ** Fetching logs ** ...");
         let env = EnvConfig::global();
         let nrls_id = env.get_val(NRLS_ACCOUNT_ID);
         let nrls_key = env.get_val(NRLS_API_KEY);
@@ -97,7 +97,7 @@ impl NewRelic {
         };
         let log_query = format!("SELECT * FROM Log SINCE {since}");
         let nrql_payload: String = create_nrql_payload(&nrls_id, &log_query);
-        info!("Constructed query: {nrql_payload}");
+        trace!("Constructed query: {nrql_payload}");
 
         // set api key in headers
         assert!(!nrls_key.is_empty(), "API Header Key is Missing!");

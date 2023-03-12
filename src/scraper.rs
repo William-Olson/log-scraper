@@ -5,14 +5,14 @@
 use actix_web::web::Data;
 
 use crate::{caching, new_relic::NewRelic, storage, LogScraperState};
-use tracing::{info, instrument, warn};
+use tracing::{info, instrument, warn, trace};
 
 /// Saves the string using the caching module. Fails softly
 /// with error message printed to stdout.
 #[instrument(name = "save_to_cache")]
 async fn save_to_cache(val: String) {
     match caching::set_cached_val(val).await {
-        Ok(()) => info!("Success: saved cached value successfully."),
+        Ok(()) => trace!("Success: saved cached value successfully."),
         Err(err) => {
             warn!("Warning: An error occurred saving to cache: {:?}", err)
         }
@@ -23,16 +23,16 @@ async fn save_to_cache(val: String) {
 #[instrument(name = "run_sync")]
 pub async fn run_sync(data: Data<LogScraperState>) -> tokio::io::Result<()> {
     // acquire lock on mutex
-    let mut last_seen = data.last_seen.lock().unwrap();
+    let mut last_seen = data.last_seen.lock().await;
     let t: String = (*last_seen.clone()).to_string();
 
     // run sync operation
-    info!("Sending value to log_scraper: {}", t);
+    trace!("Sending value to log_scraper: {}", t);
     let u = attempt_sync(t).await;
 
     // update the underlying mutex value
     *last_seen = u.clone();
-    info!("Updated LogScraperState with last_seen: {}", u);
+    trace!("Updated LogScraperState with last_seen: {}", u);
     Ok(())
 }
 
@@ -44,10 +44,10 @@ pub async fn run_sync(data: Data<LogScraperState>) -> tokio::io::Result<()> {
 async fn attempt_sync(timestamp_from_memory: String) -> String {
     // only hit the cache if needed for reading
     let last_seen = if !timestamp_from_memory.is_empty() {
-        info!("Using value of last_seen from memory: {timestamp_from_memory}");
+        trace!("Using value of last_seen from memory: {timestamp_from_memory}");
         timestamp_from_memory
     } else {
-        info!("Reading from remote cache...");
+        trace!("Reading from remote cache...");
         match caching::get_cached_val().await {
             Ok(last_seen) => {
                 info!("Found value from cache: {last_seen}");

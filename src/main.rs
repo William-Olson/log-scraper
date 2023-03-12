@@ -31,17 +31,19 @@
 use crate::env_config::{EnvConfig, CONFIG, LOG_DIRECTORY, LS_SVC_PORT};
 use actix_files as fs;
 use actix_web::{middleware::Logger, web, web::Data, App, HttpServer};
+use tokio::sync::Mutex;
 use tracing::{event, instrument, Level};
 use tracing_subscriber::fmt::format;
 
 mod api;
 mod caching;
+mod cron_tasks;
 mod env_config;
 mod new_relic;
 mod scraper;
 mod storage;
 
-use std::sync::Mutex;
+// use tokio::lock::Mutex;
 
 #[derive(Debug)]
 pub struct LogScraperState {
@@ -61,10 +63,10 @@ async fn main() -> std::io::Result<()> {
             }
             write!(writer, "{field_data:?}")
         }))
-        .with_file(true)
-        .with_line_number(true)
-        .with_thread_ids(true)
-        .with_target(true)
+        // .with_file(true)
+        // .with_line_number(true)
+        // .with_thread_ids(true)
+        // .with_target(true)
         .init();
 
     // initialize the environment config
@@ -80,6 +82,9 @@ async fn main() -> std::io::Result<()> {
     let app_state: Data<LogScraperState> = Data::new(LogScraperState {
         last_seen: Mutex::new("".to_owned()),
     });
+
+    // start up cron jobs
+    cron_tasks::start(app_state.clone());
 
     // get server port from environment variables or defaults
     let port = EnvConfig::global().get_val(LS_SVC_PORT);

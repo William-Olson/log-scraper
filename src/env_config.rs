@@ -29,6 +29,8 @@ pub const LS_SVC_PORT: &str = "LS_SVC_PORT";
 pub const REDIS_URL: &str = "REDIS_URL";
 /// `caching` env var name: the hash_key to store the last seen timestamp under.
 pub const REDIS_KEY_NAME: &str = "REDIS_KEY_NAME";
+/// `cron_tasks` env var name: the schedule to poll for changes on the remote server.
+pub const LS_POLL_SCHEDULE: &str = "LS_POLL_SCHEDULE";
 /// `new_relic` env var name: the id of the new relic account the logs reside under.
 pub const NRLS_ACCOUNT_ID: &str = "NRLS_ACCOUNT_ID";
 /// `new_relic` env var name: the API key required to access the new relic query service endpoint.
@@ -56,6 +58,7 @@ impl EnvConfig<'_> {
                 (LOG_DIRECTORY, "./".to_owned()),
                 (LOG_FILE_PREFIX, "app".to_owned()),
                 (LOG_FILE_EXTENSION, "log".to_owned()),
+                (LS_POLL_SCHEDULE, "0 1/5 * * * *".to_owned()),
                 (LS_SVC_PORT, "3333".to_owned()),
                 (NRLS_ACCOUNT_ID, "".to_owned()),
                 (NRLS_API_KEY, "".to_owned()),
