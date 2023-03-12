@@ -12,6 +12,8 @@ COPY ./src ./src
 # compile and obtain binaries
 RUN cargo install --path .
 
+# RUN cargo doc --document-private-items
+
 
 # -- run time container --
 
@@ -21,6 +23,8 @@ RUN apt-get update && \
     apt-get -y upgrade
 
 RUN mkdir -p /usr/src/app
+
+# COPY --from=build /usr/src/log-scraper/target/doc /docs
 
 COPY --from=build /usr/local/cargo/bin/log-scraper /usr/src/app/log-scraper
 

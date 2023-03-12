@@ -103,10 +103,13 @@ async fn main() -> std::io::Result<()> {
                         fs::Files::new("/files", EnvConfig::global().get_val(LOG_DIRECTORY))
                             .show_files_listing(),
                     )
-                    .service(
-                        // serve docs as well
-                        fs::Files::new("/docs", "./docs").show_files_listing(),
-                    )
+                    // // Note: to generate docs... 
+                    // // run the following command in the terminal:
+                    // //  `cargo doc --document-private-items && mv ./target/doc ./docs`
+                    // .service(
+                    //     // serve docs as well
+                    //     fs::Files::new("/docs", "./docs").show_files_listing(),
+                    // )
                     .service(
                         web::scope("/logs")
                             .app_data(app_state.clone())
