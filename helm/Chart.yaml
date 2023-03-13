@@ -4,10 +4,10 @@ description: Log Scraper Helm chart for Kubernetes Deployments
 type: application
 
 # log-scraper chart version
-version: 0.1.1
+version: 0.1.2
 
 # log-scraper version
-appVersion: "0.3.0"
+appVersion: "0.3.1"
 
 maintainers:
   - name: Will Olson

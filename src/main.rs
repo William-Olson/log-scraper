@@ -89,30 +89,42 @@ async fn main() -> std::io::Result<()> {
     // get server port from environment variables or defaults
     let port = EnvConfig::global().get_val(LS_SVC_PORT);
 
+    // include some basic info for server logging
+    let api_logger_pattern = "%t %r (IP=%a) %{User-Agent}i (time = %D ms)";
+
     // parse the port and start the server
     event!(Level::INFO, "Starting server on port {port}");
     match port.parse::<u16>() {
         Ok(port_number) => {
             HttpServer::new(move || {
                 App::new()
-                    .wrap(Logger::new("%t %r (IP=%a) %{User-Agent}i (time = %D ms)"))
+                    // don't attach logger to this scope to reduce noise from health checks
                     .service(api::index_api::health_check_endpoint)
                     .service(api::index_api::version_endpoint)
                     .service(
-                        // allow viewing log files directly
-                        fs::Files::new("/files", EnvConfig::global().get_val(LOG_DIRECTORY))
-                            .show_files_listing(),
+                        web::scope("/files")
+                            .wrap(Logger::new(api_logger_pattern))
+                            .service(
+                                // allow viewing log files directly
+                                fs::Files::new("/", EnvConfig::global().get_val(LOG_DIRECTORY))
+                                    .show_files_listing(),
+                            ),
                     )
-                    // // Note: to generate docs... 
+                    // // Note: to generate docs...
                     // // run the following command in the terminal:
                     // //  `cargo doc --document-private-items && mv ./target/doc ./docs`
                     // .service(
-                    //     // serve docs as well
-                    //     fs::Files::new("/docs", "./docs").show_files_listing(),
+                    //     web::scope("/docs")
+                    //         .wrap(Logger::new(api_logger_pattern))
+                    //         .service(
+                    //             // allow viewing log files directly
+                    //             fs::Files::new("/", "./docs").show_files_listing(),
+                    //         ),
                     // )
                     .service(
                         web::scope("/logs")
                             .app_data(app_state.clone())
+                            .wrap(Logger::new(api_logger_pattern))
                             .service(api::logs_api::sync_logs_endpoint)
                             .service(api::logs_api::get_log_list_endpoint)
                             .service(api::logs_api::delete_log_endpoint)
