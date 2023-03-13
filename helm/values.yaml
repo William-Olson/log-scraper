@@ -1,0 +1,61 @@
+replicaCount: 1
+
+image:
+  repository: willko/log-scraper
+  pullPolicy: IfNotPresent
+  tag: "0.3.0-with-docs"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+podSecurityContext: {}
+securityContext: {}
+
+service:
+  type: LoadBalancer
+  # config
+  port: 3333
+  logPrefix: app
+  logExtension: log
+  logDirectory: /usr/src/app/logs
+  pollSchedule: "0 1/5 * * * *"
+  redisURL: "redis-release-master.default:6379"
+  newRelicAccountId: ""
+  newRelicApiKey: ""
+  redisKeyName: last_seen_timestamp
+
+ingress:
+  enabled: true
+  className: ""
+  annotations: {}
+  hosts:
+    - host: log-scraper.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+
+persistence:
+  enabled: true
+  storageClass:
+  accessMode: ReadWriteOnce
+  size: 20Gi
+
+resources: {}
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 1
+  targetCPUUtilizationPercentage: 80
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "log-scraper.fullname" . }}
+  labels:
+    {{- include "log-scraper.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "log-scraper.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "log-scraper.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "log-scraper.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          {{- if .Values.persistence.enabled }}
+          volumeMounts:
+          - name: log-scraper-data
+            mountPath: {{ .Values.service.logDirectory | quote }}
+          {{- end }}
+          env:
+          - name: LOG_DIRECTORY
+            value: {{ default "/usr/src/app/logs" .Values.service.logDirectory | quote }}
+          - name: LOG_FILE_PREFIX
+            value: {{ default "app" .Values.service.logPrefix | quote }}
+          - name: LOG_FILE_EXTENSION
+            value: {{ default "log" .Values.service.logExtension | quote }}
+          - name: LS_POLL_SCHEDULE
+            value: {{ default "0 1/5 * * * *" .Values.service.pollSchedule | quote }}
+          - name: LS_SVC_PORT
+            value: {{ default "3333" .Values.service.port | quote }}
+          - name: REDIS_KEY_NAME
+            value: {{ default "last_seen_timestamp" .Values.service.redisKeyName | quote }}
+          - name: NRLS_ACCOUNT_ID
+            valueFrom:
+              secretKeyRef:
+                name: {{ template "log-scraper.fullname" . }}
+                key: nr-account-id
+          - name: NRLS_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: {{ template "log-scraper.fullname" . }}
+                key: nr-api-key
+          - name: REDIS_URL
+            value: {{default "redis-release-master.default:6379" .Values.service.redisURL | quote }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+      - name: log-scraper-data
+      {{- if .Values.persistence.enabled }}
+        persistentVolumeClaim:
+          claimName: {{ template "log-scraper.fullname" . }}
+      {{- else }}
+        emptyDir: {}
+      {{- end -}}

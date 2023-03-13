@@ -42,6 +42,55 @@ curl -i localhost:8080
 # {"ok":true,"message":"Healthy and kicking! Docs: /docs/log_scraper/api/logs_api/index.html"}
 ```
 
+## Helm Chart
+
+There is a helm chart for deploying the service to a Kubernetes environment.
+
+For example, you can deply the service to the default namespace with a command similar to the following:
+
+```bash
+helm install log-scraper ./helm --namespace default \
+  --set service.newRelicAccountId='1234567' \
+  --set service.newRelicApiKey='<my-api-key>' \
+  --set service.logExtension='log' \
+  --set service.logDirectory=/usr/src/app/logs \
+  --set service.pollSchedule='0 1/5 * * * *' \
+  --set service.redisURL='redis-release-master.default:6379' \
+  --set service.port=3333 \
+  --set service.logPrefix=my-app-logs \
+  --set service.redisKeyName=last_seen_timestamp
+
+# NAME: log-scraper
+# LAST DEPLOYED: Sun Mar 12 19:07:24 2023
+# NAMESPACE: default 
+# STATUS: deployed
+# REVISION: 1
+# NOTES:
+# 1. Get the application URL by running these commands:
+#   http://log-scraper.local/
+```
+
+You can show the release with the `helm list` command:
+
+```bash
+helm list
+
+# NAME         	NAMESPACE	REVISION	UPDATED                             	STATUS  	CHART            	APP VERSION
+# log-scraper  	default 	1       	2023-03-12 19:07:24.542044 -0500 CDT	deployed	log-scraper-0.1.1	0.3.0
+```
+
+To teardown the release use the delete command:
+
+```bash
+helm delete log-scraper
+
+# release "log-scraper" uninstalled
+
+helm list
+# NAME         	NAMESPACE	REVISION	UPDATED                             	STATUS  	CHART            	APP VERSION
+
+```
+
 
 ## Environment Variables
 
