@@ -38,78 +38,89 @@ curl -i localhost:8080
 # content-length: 92
 # content-type: application/json
 # date: Sun, 12 Mar 2023 18:01:36 GMT
-# 
+#
 # {"ok":true,"message":"Healthy and kicking! Docs: /docs/log_scraper/api/logs_api/index.html"}
 ```
 
 ## Helm Chart
 
-There is a helm chart for deploying the service to a Kubernetes environment.
+There is a helm chart for deploying the service to a Kubernetes environment. See the [`./helm`](./helm/) directory for more information.
 
-For example, you can deply the service to the default namespace with a command similar to the following:
-
-```bash
-helm install log-scraper ./helm --namespace default \
-  --set service.newRelicAccountId='1234567' \
-  --set service.newRelicApiKey='<my-api-key>' \
-  --set service.logExtension='log' \
-  --set service.logDirectory=/usr/src/app/logs \
-  --set service.pollSchedule='0 1/5 * * * *' \
-  --set service.redisURL='redis-release-master.default:6379' \
-  --set service.port=3333 \
-  --set service.logPrefix=my-app-logs \
-  --set service.redisKeyName=last_seen_timestamp
-
-# NAME: log-scraper
-# LAST DEPLOYED: Sun Mar 12 19:07:24 2023
-# NAMESPACE: default 
-# STATUS: deployed
-# REVISION: 1
-# NOTES:
-# 1. Get the application URL by running these commands:
-#   http://log-scraper.local/
-```
-
-You can show the release with the `helm list` command:
+Deploy to Kubernetes:
 
 ```bash
-helm list
-
-# NAME         	NAMESPACE	REVISION	UPDATED                             	STATUS  	CHART            	APP VERSION
-# log-scraper  	default 	1       	2023-03-12 19:07:24.542044 -0500 CDT	deployed	log-scraper-0.1.1	0.3.0
-```
-
-To teardown the release use the delete command:
-
-```bash
-helm delete log-scraper
-
-# release "log-scraper" uninstalled
-
-helm list
-# NAME         	NAMESPACE	REVISION	UPDATED                             	STATUS  	CHART            	APP VERSION
-
+helm install log-scraper ./helm --namespace <my-namespace> \
+  --set service.newRelicAccountId=$NRLS_ACCOUNT_ID \
+  --set service.newRelicApiKey=$NRLS_API_KEY \
+  --set service.logPrefix='my-awesome-app-logs'
 ```
 
 
-## Environment Variables
+## Configuration
 
-Below is a full list of environment variables you can provide to the log-scraper service.
+There are environment variable and helm variable names for each configuration setting the `log-scraper` accepts. The table below shows the corresponding names for each setting and their default value for quick reference and followed by the same list with their descriptions for futher details.
 
-| Name                 | Default Value           | Description                                          |
-|:---------------------|:------------------------|------------------------------------------------------|
-| `LOG_DIRECTORY`      | `"./"`                  | The location of where logs are stored on the system. |
-| `LOG_FILE_PREFIX`    | `"app"`                 | The filename prefix for saving log files.            |
-| `LOG_FILE_EXTENSION` | `"log"`                 | The extension to use when saving log files.          |
-| `LS_POLL_SCHEDULE`   | `"0 1/5 * * * *"`       | The schedule to poll the remote server for new logs. |
-| `LS_SVC_PORT`        | `"3333"`                | The port the service will be served at.              |
-| `NRLS_ACCOUNT_ID`    | `""`                    | New Relic Account ID                                 |
-| `NRLS_API_KEY`       | `""`                    | New Relic API Key                                    |
-| `REDIS_URL`          | `"127.0.0.1:6379"`      | Redis URL with port                                  |
-| `REDIS_KEY_NAME`     | `"last_seen_timestamp"` | The key name to store the last seen timestamp under. |
+| Name                 | Helm Setting                 | Default Value           |
+|:---------------------|:-----------------------------|:------------------------|
+| `LOG_DIRECTORY`      | `service.logDirectory`       | `"./"`                  |
+| `LOG_FILE_PREFIX`    | `service.logPrefix`          | `"app"`                 |
+| `LOG_FILE_EXTENSION` | `service.logExtension`       | `"log"`                 |
+| `LS_POLL_SCHEDULE`   | `service.pollSchedule`       | `"0 1/5 * * * *"`       |
+| `LS_SVC_PORT`        | `service.port`               | `"3333"`                |
+| `NRLS_ACCOUNT_ID`    | `service.newRelicAccountId`  | `""`                    |
+| `NRLS_API_KEY`       | `service.newRelicApiKey`     | `""`                    |
+| `REDIS_URL`          | `service.redisURL`           | `"127.0.0.1:6379"`      |
+| `REDIS_KEY_NAME`     | `service.redisKeyName`       | `"last_seen_timestamp"` |
 
 
-## Building locally
+## Config Details
+
+---
+
+**LOG_DIRECTORY** (`service.logDirectory`)
+
+The location of where logs are stored on the system.
+
+**LOG_FILE_PREFIX** (`service.logPrefix`)
+
+The filename prefix for saving log files. The resulting saved files wll have the pattern similar to the following:
+
+```bash
+{logPrefix}_{date}.{logExtension}
+```
+
+**LOG_FILE_EXTENSION** (`service.logExtension`)
+
+The extension to use when saving log files. Does not include the "dot".
+
+**LS_POLL_SCHEDULE** (`service.pollSchedule`)
+
+The cron schedule to set for polling the remote server to search for new logs.
+
+**LS_SVC_PORT** (`service.port`)
+
+The port the service will be served at.
+
+**NRLS_ACCOUNT_ID** (`service.newRelicAccountId`)
+
+The New Relic Account ID to authenticate as. This is passed in the query that is sent to their API.
+
+**NRLS_API_KEY** (`service.newRelicApiKey`)
+
+This is an API Key from New Relic that works with their NRQL GraphQL API.
+
+**REDIS_URL** (`service.redisURL`)
+
+Redis URL with port.
+
+**REDIS_KEY_NAME** (`service.redisKeyName`)
+
+The key name to store the timestamp of the last seen log entry fetched from the remote server.
+
+
+---
+
+## Development
 
 Building and running the service locally is also quite simple and straightforward.
 

@@ -4,7 +4,7 @@ description: Log Scraper Helm chart for Kubernetes Deployments
 type: application
 
 # log-scraper chart version
-version: 0.1.2
+version: 0.1.4
 
 # log-scraper version
 appVersion: "0.3.1"

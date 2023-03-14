@@ -74,7 +74,10 @@ spec:
                 name: {{ template "log-scraper.fullname" . }}
                 key: nr-api-key
           - name: REDIS_URL
-            value: {{default "redis-release-master.default:6379" .Values.service.redisURL | quote }}
+            valueFrom:
+              secretKeyRef:
+                name: {{ template "log-scraper.fullname" . }}
+                key: redis-url
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}
