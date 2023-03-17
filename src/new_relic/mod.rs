@@ -16,7 +16,7 @@ use crate::env_config::{EnvConfig, NRLS_ACCOUNT_ID, NRLS_API_KEY};
 use crate::new_relic::types::{NewRelicLogItem, NrqlResponse};
 use chrono::Duration;
 use reqwest::header::{HeaderMap, HeaderValue};
-use tracing::{instrument, trace};
+use tracing::{event, instrument, trace, warn, Level};
 
 /// Creates a New Relic Graphql Request Payload with the given Account
 /// ID and simple NRQL expression.
@@ -47,7 +47,6 @@ pub struct NewRelic {}
 impl NewRelic {
     /// Creates a new `NewRelic` struct.
     pub fn new() -> NewRelic {
-        
         NewRelic {}
     }
 
@@ -56,33 +55,26 @@ impl NewRelic {
     /// Requires Account ID (`NRLS_ACCOUNT_ID`) and API key
     /// (`NRLS_API_KEY`) to be set via environment variables.
     #[instrument(name = "logs_since")]
-    pub async fn logs_since(&self, timestamp: &str) -> Vec<NewRelicLogItem> {
-        let resp = self.get_logs(timestamp).await;
+    pub async fn logs_since(&self, timestamp: &str) -> Result<Vec<NewRelicLogItem>, String> {
+        // fetch new relic logs since last timestamp
+        let resp = self.get_logs(timestamp).await?;
+
+        // don't return a super nested structure like the response is, just grab results
         let mut logs = resp.data.actor.account.nrql.results;
 
         if logs.is_empty() {
-            return logs;
+            return Ok(logs);
         }
 
         // ensure logs are sorted by timestamp
         logs.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
 
-        // return logs if no filtering is needed
-        if timestamp.is_empty() {
-            return logs;
-        }
-
-        // otherwise filter out any seen logs if they come back in the response
-        let filtered: Vec<NewRelicLogItem> = logs
-            .into_iter()
-            .filter(|row| row.timestamp.timestamp_millis().to_string() == timestamp)
-            .collect::<Vec<NewRelicLogItem>>();
-        filtered
+        Ok(logs)
     }
 
     // Makes an http call to fetch logs from New Relic API.
     #[instrument(name = "get_logs")]
-    async fn get_logs(&self, timestamp_millis: &str) -> NrqlResponse {
+    async fn get_logs(&self, timestamp_millis: &str) -> Result<NrqlResponse, String> {
         trace!("... ** Fetching logs ** ...");
         let env = EnvConfig::global();
         let nrls_id = env.get_val(NRLS_ACCOUNT_ID);
@@ -95,12 +87,15 @@ impl NewRelic {
         } else {
             timestamp_millis.to_owned()
         };
+
         let log_query = format!("SELECT * FROM Log SINCE {since}");
         let nrql_payload: String = create_nrql_payload(&nrls_id, &log_query);
         trace!("Constructed query: {nrql_payload}");
 
         // set api key in headers
-        assert!(!nrls_key.is_empty(), "API Header Key is Missing!");
+        if nrls_key.is_empty() {
+            return Err("No New Relic key provided!".to_owned());
+        }
         let mut headers = HeaderMap::new();
         headers.append(
             "API-Key",
@@ -108,26 +103,35 @@ impl NewRelic {
         );
 
         let client = reqwest::Client::new();
-        let response = client
+        let request = client
             .get("https://api.newrelic.com/graphql")
             .headers(headers)
             .body(nrql_payload)
             .send();
 
-        // TODO: Remove the panics from bad request calls & json parsing. 
-        //       Possibly fail softly or return errors
-        match response.await {
-            Ok(res) => {
-                let body_text = res.text().await.expect("Failed retrieving body");
-
-                // return match res.json::<NrqlResponse>().await {
-                return match serde_json::from_str::<NrqlResponse>(&body_text) {
-                    Ok(j) => j,
-                    Err(ei) => panic!("Error parsing response: \n{body_text:?} \n{ei:?}"),
-                };
+        let response = match request.await {
+            Ok(resp) => resp,
+            Err(err) => {
+                event!(Level::ERROR, "{err:?}");
+                return Err("Failed to request data from the remote server".to_owned());
             }
-            Err(e) => panic!("Error sending request: {e:?}"),
         };
+
+        let response_body = match response.text().await {
+            Ok(resp_result) => resp_result,
+            Err(parse_err) => {
+                event!(Level::ERROR, "{parse_err:?}");
+                return Err("Failed to parse response data from remote server".to_owned());
+            }
+        };
+
+        match serde_json::from_str::<NrqlResponse>(&response_body) {
+            Ok(j) => Ok(j),
+            Err(e) => {
+                warn!("{e:?}");
+                Err("Error fetching logs".to_owned())
+            }
+        }
     }
 
     /// Helper for determining the log item with the latest timestamp in a list.

@@ -5,7 +5,7 @@
 use actix_web::web::Data;
 
 use crate::{caching, new_relic::NewRelic, storage, LogScraperState};
-use tracing::{info, instrument, warn, trace};
+use tracing::{info, instrument, trace, warn};
 
 /// Saves the string using the caching module. Fails softly
 /// with error message printed to stdout.
@@ -51,7 +51,7 @@ async fn attempt_sync(timestamp_from_memory: String) -> String {
         match caching::get_cached_val().await {
             Ok(last_seen) => {
                 info!("Found value from cache: {last_seen}");
-                last_seen.to_string()
+                last_seen
             }
             Err(err) => {
                 warn!("Warning: An error occurred reading from cache: {err:?}");
@@ -60,10 +60,30 @@ async fn attempt_sync(timestamp_from_memory: String) -> String {
         }
     };
 
+    let new_watermark = run_new_relic_sync(last_seen).await;
+
+    info!("Caching last_seen timestamp on remote: {new_watermark}");
+    save_to_cache(new_watermark.clone()).await;
+
+    // return the updated timestamp for saving to memory
+    new_watermark
+}
+
+/// Fetches, prints and saves new logs from New Relic based on last_seen timestamp.
+async fn run_new_relic_sync(last_seen: String) -> String {
     let nr = NewRelic::new();
-    let log_results = nr.logs_since(&last_seen).await;
 
     // bail if there are no new logs to sync
+    let log_results = match nr.logs_since(&last_seen).await {
+        Ok(logs) => logs,
+        Err(err) => {
+            warn!("There was an error fetching new relic logs since {last_seen} {err}");
+            info!("Caching old timestamp to remote: {last_seen}");
+            save_to_cache(last_seen.clone()).await;
+            return last_seen;
+        }
+    };
+
     if log_results.is_empty() {
         // but make sure we cache the value to stay in sync
         info!("No logs found. Caching old timestamp to remote: {last_seen}");
@@ -103,9 +123,5 @@ async fn attempt_sync(timestamp_from_memory: String) -> String {
         return last_seen;
     }
 
-    info!("Caching last_seen timestamp on remote: {watermark}");
-    save_to_cache(watermark.clone()).await;
-
-    // return the updated timestamp for saving to memory
     watermark
 }

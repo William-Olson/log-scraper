@@ -98,15 +98,21 @@ async fn main() -> std::io::Result<()> {
         Ok(port_number) => {
             HttpServer::new(move || {
                 App::new()
-                    // don't attach logger to this scope to reduce noise from health checks
-                    .service(api::index_api::health_check_endpoint)
-                    .service(api::index_api::version_endpoint)
                     .service(
                         web::scope("/files")
                             .wrap(Logger::new(api_logger_pattern))
                             .service(
                                 // allow viewing log files directly
                                 fs::Files::new("/", EnvConfig::global().get_val(LOG_DIRECTORY))
+                                    .show_files_listing(),
+                            ),
+                    )
+                    .service(
+                        web::scope("/web")
+                            .wrap(Logger::new(api_logger_pattern))
+                            .service(
+                                fs::Files::new("", "./build")
+                                    .index_file("./index.html")
                                     .show_files_listing(),
                             ),
                     )
@@ -117,7 +123,6 @@ async fn main() -> std::io::Result<()> {
                     //     web::scope("/docs")
                     //         .wrap(Logger::new(api_logger_pattern))
                     //         .service(
-                    //             // allow viewing log files directly
                     //             fs::Files::new("/", "./docs").show_files_listing(),
                     //         ),
                     // )
@@ -129,6 +134,13 @@ async fn main() -> std::io::Result<()> {
                             .service(api::logs_api::get_log_list_endpoint)
                             .service(api::logs_api::delete_log_endpoint)
                             .service(api::logs_api::get_log_contents_endpoint),
+                    )
+                    .service(
+                        web::scope("")
+                            .service(api::index_api::health_check_endpoint)
+                            .service(api::index_api::version_endpoint)
+                            // static files for web scope need to be served at root
+                            .service(fs::Files::new("/static", "./build/static"))
                     )
             })
             .bind(("0.0.0.0", port_number))?
