@@ -54,9 +54,6 @@ helm list
 
 You can run the upgrade command to apply new updates or change values to configuration settings.
 
-Note: the `--values` param is optional and you can also specify the values via `--set` instead. One thing
-to keep in mind is that you need to specify your overrides explicitly every time you upgrade as well as at the
-time the app was first deployed.
 
 ```bash
 helm upgrade log-scraper ./helm \
@@ -64,7 +61,9 @@ helm upgrade log-scraper ./helm \
   --namespace <my-namespace>
 ```
 
-### List Release Versions (Revisions)
+Helm Upgrade Note: _the `--values` param is optional and you can also specify the values via `--set` instead. One thing to keep in mind is that you need to specify your overrides explicitly every time you upgrade as well as at the time the app was first deployed._
+
+### List Releases
 
 ```bash
 # show past releases

@@ -58,7 +58,7 @@ helm install log-scraper ./helm --namespace <my-namespace> \
 
 ## Configuration
 
-There are environment variable and helm variable names for each configuration setting the `log-scraper` accepts. The table below shows the corresponding names for each setting and their default value for quick reference and followed by the same list with their descriptions for futher details.
+There are environment variable and helm variable names for each configuration setting the `log-scraper` accepts. The table below shows the corresponding names for each setting and their default value for quick reference followed by the same list with their descriptions for futher details.
 
 | Name                 | Helm Setting                 | Default Value           |
 |:---------------------|:-----------------------------|:------------------------|
@@ -75,11 +75,10 @@ There are environment variable and helm variable names for each configuration se
 
 ## Config Details
 
----
 
 **LOG_DIRECTORY** (`service.logDirectory`)
 
-The location of where logs are stored on the system.
+The location of where logs are stored on the system. Note this defaults to a volume path when deploying with Helm (mounted at `/usr/src/app/logs`).
 
 **LOG_FILE_PREFIX** (`service.logPrefix`)
 
