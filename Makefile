@@ -3,6 +3,18 @@ dev: build
 	@COMMENT='Running Service Now . . .' make -s flower-box
 	cargo run
 
+tag: CURRENT_VERSION="$(shell yq '.package.version' ./Cargo.toml)"
+
+tag: build-container
+	@COMMENT='Tagging Docker Image . . .' make -s flower-box
+	@if [[ -z "$(TAG)" ]]; then \
+		echo "Error: Please specifiy the Docker tag with the TAG environment variable. " ;\
+		echo "i.e. \n\t TAG=$(CURRENT_VERSION) make tag"; echo; exit 1; \
+	else \
+		echo "Tagging image willko/log-scraper:"$(TAG) ; \
+		docker tag willko/log-scraper:latest willko/log-scraper:$(TAG) ; \
+	fi
+
 with-docs: build docs
 	@COMMENT='Running Service Now . . .' make -s flower-box
 	cargo run

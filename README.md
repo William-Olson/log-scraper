@@ -154,5 +154,8 @@ make start-compose
 
 # Docker Compose Cleanup
 make compose-cleanup
+
+# Tag a new Docker build
+TAG=<tag> make tag
 ```
 
