@@ -3,18 +3,25 @@
 version: 2.1
 orbs:
   slack: circleci/slack@4.4.2
+  node: circleci/node@5.2.0
 jobs:
   build:
     docker:
-      - image: cimg/rust:1.67.0
+      - image: cimg/rust:1.68
     steps:
       - checkout
+      - node/install:
+          node-version: '18.16.0'
       - run: cargo --version
       - run:
-          name: Build the Project
-          command: cargo build
+          name: Run NPM Install
+          command: npm ci
+          working_directory: ./web
       - run:
-          name: Lint the Project
+          name: Build the Project
+          command: make build
+      - run:
+          name: Lint the Rust Code
           command: cargo clippy
       - slack/notify:
           channel: circle-ci

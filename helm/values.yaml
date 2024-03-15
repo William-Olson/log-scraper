@@ -3,7 +3,7 @@ replicaCount: 1
 image:
   repository: willko/log-scraper
   pullPolicy: IfNotPresent
-  tag: "0.3.1-with-docs"
+  tag: "0.4.0"
 
 selectorLabels:
   - app: log-scraper

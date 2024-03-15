@@ -1,0 +1,29 @@
+services:
+  web:
+    image: willko/log-scraper-ui:latest
+    volumes: 
+      - ./web:/opt/app
+    ports:
+      - "3000:3000"
+  log-scraper:
+    image: willko/log-scraper:latest
+    volumes: 
+      - ./web:/opt/app
+    ports:
+      - "3333:3333"
+    links:
+      - redis
+    environment:
+      - LS_SVC_PORT=3333
+      - REDIS_URL=redis:6379
+      - REDIS_KEY_NAME
+      - LS_POLL_SCHEDULE
+      - NRLS_ACCOUNT_ID
+      - NRLS_API_KEY
+      - LOG_DIRECTORY
+      - LOG_FILE_PREFIX
+      - LOG_FILE_EXTENSION
+  redis:
+    image: redis
+    ports:
+      - "6379:6379"

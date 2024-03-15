@@ -135,21 +135,27 @@ The following commands should get you up and running. There scripts provided as 
 
 ```
 # Local Build
-cargo build
-
-# Local Run
-cargo run
+make
 
 # Generate Docs
 cargo doc --document-private-items --open
 
 # Docker Build
-./scripts/docker_build.sh
+make build-container
 
 # Docker Run
-./scripts/docker_dev_run.sh
+make start-container
 
 # Docker Cleanup
-./scripts/docker_cleanup.sh
+make clean-containers
+
+# Docker Compose Run
+make start-compose
+
+# Docker Compose Cleanup
+make compose-cleanup
+
+# Tag a new Docker build
+TAG=<tag> make tag
 ```
 

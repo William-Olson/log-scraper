@@ -77,11 +77,12 @@ impl EnvConfig<'_> {
         for k in keys {
             match env::var(k) {
                 Ok(val) => {
-                    event!(Level::INFO, "Loaded config value {k} (environment)");
+                    event!(Level::INFO, "Using config value {k} (environment) = {val}");
                     self.config.insert(k, val);
                 }
                 Err(_) => {
-                    event!(Level::WARN, "Loaded config value {k}");
+                    let v = self.config.get(k).unwrap();
+                    event!(Level::WARN, "Using config value {k} (default) = {v}");
                 }
             };
         }
