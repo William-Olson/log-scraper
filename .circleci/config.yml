@@ -3,6 +3,7 @@
 version: 2.1
 orbs:
   slack: circleci/slack@4.4.2
+  node: circleci/node@5.2.0
 jobs:
   build:
     docker:
@@ -11,10 +12,14 @@ jobs:
       - checkout
       - run: cargo --version
       - run:
-          name: Build the Project
-          command: cargo build
+          name: Run NPM Install
+          command: npm ci
+          working_directory: ./web
       - run:
-          name: Lint the Project
+          name: Build the Project
+          command: make build
+      - run:
+          name: Lint the Rust Code
           command: cargo clippy
       - slack/notify:
           channel: circle-ci

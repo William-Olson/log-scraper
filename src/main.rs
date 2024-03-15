@@ -29,6 +29,7 @@
 //! - `LS_SVC_PORT`: (optional) App server port (defaults to `3333`)
 
 use crate::env_config::{EnvConfig, CONFIG, LOG_DIRECTORY, LS_SVC_PORT};
+use actix_cors::Cors;
 use actix_files as fs;
 use actix_web::{middleware::Logger, web, web::Data, App, HttpServer};
 use tokio::sync::Mutex;
@@ -98,6 +99,8 @@ async fn main() -> std::io::Result<()> {
         Ok(port_number) => {
             HttpServer::new(move || {
                 App::new()
+                    // add cors headers
+                    .wrap(Cors::permissive())
                     .service(
                         web::scope("/files")
                             .wrap(Logger::new(api_logger_pattern))

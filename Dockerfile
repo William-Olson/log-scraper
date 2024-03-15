@@ -1,6 +1,6 @@
 # -- compile time container --
 
-FROM rust:1.67 as build
+FROM rust:1.68 as build
 
 WORKDIR /usr/src/log-scraper
 
@@ -13,6 +13,7 @@ COPY ./src ./src
 RUN cargo install --path .
 
 # RUN cargo doc --document-private-items
+COPY ./build ./build
 
 
 # -- run time container --
@@ -25,6 +26,7 @@ RUN apt-get update && \
 RUN mkdir -p /usr/src/app
 
 # COPY --from=build /usr/src/log-scraper/target/doc /docs
+COPY --from=build /usr/src/log-scraper/build /build
 
 COPY --from=build /usr/local/cargo/bin/log-scraper /usr/src/app/log-scraper
 

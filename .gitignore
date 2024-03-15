@@ -3,8 +3,9 @@ logs/
 docs/
 build/
 
-# ignore web for now until its decent
-web/
 
 # web/node_modules/
 # web/build/
+
+*.log
+
