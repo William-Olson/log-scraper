@@ -10,6 +10,8 @@ jobs:
       - image: cimg/rust:1.68
     steps:
       - checkout
+      - node/install:
+          node-version: '18.16.0'
       - run: cargo --version
       - run:
           name: Run NPM Install
