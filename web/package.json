@@ -27,6 +27,7 @@
   "scripts": {
     "start": "react-scripts start",
     "dev": "npm run pre-dev && npm run cargo-run",
+    "proxy-dev": "PUBLIC_URL=/absproxy/3000 WDS_SOCKET_PATH=/absproxy/3000/sockjs-node react-scripts start",
     "pre-dev": "react-scripts build && rm -rf ../build && mv ./build ../",
     "cargo-run": "cd ../ && cargo run",
     "build": "react-scripts build",
