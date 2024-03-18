@@ -7,6 +7,10 @@ if (process.env.NODE_ENV !== 'production') {
   API_BASE_URL = 'http://localhost:3333';
 }
 
+if (process.env.REACT_APP_LSUI_API_URL) {
+  API_BASE_URL = process.env.REACT_APP_LSUI_API_URL;
+}
+
 export interface ApiLogContent {
   page: number;
   page_size: number;
