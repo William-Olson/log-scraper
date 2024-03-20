@@ -14,16 +14,16 @@ export function LogDashboard(): React.ReactElement {
       height: '350px',
       background: 'rgba(0, 0, 0, 0.93)',
       color: '#eee',
-      border: '1px solid black',
+      borderTop: '1px solid black',
       width: '100%',
     },
     logContent: {
-      height: 'calc(100vh - 366px)',
+      height: 'calc(100vh - 349px)',
       background: 'rgba(0, 0, 0, 0.9)',
       color: 'cyan'
     },
     defaultBanner: {
-      height: 'calc(100vh - 366px - 100px)', 
+      height: 'calc(100vh - 349px - 100px)', 
       background: 'rgba(0, 0, 0, 0.9)',
       padding: '50px 200px',
       color: 'grey'

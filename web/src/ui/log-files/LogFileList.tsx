@@ -1,9 +1,15 @@
 import React, { CSSProperties } from 'react';
-import { List, ListItem, ListItemButton, ListItemText, Typography } from '@mui/material';
+import { Box, List, ListItem, ListItemButton, ListItemText, Typography } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import { DeleteForever } from '@mui/icons-material';
+import ConfirmModal from '../ConfirmModal';
+import { ApiService } from '../../services/ApiService';
+
+const api = new ApiService();
 
 export interface LogFileListProps {
   setFilename: (val: string) => void;
+  refresh: () => void;
   selectedFile?: string;
   logFiles: string[];
 }
@@ -41,9 +47,38 @@ export default function LogFileList(
     props.setFilename(row.filename);
   };
 
+  // file deletion modal helpers
+  const [isDeletionModalOpen, setIsDeletionModalOpen] = React.useState(false);
+  const [fileToDelete, setFileToDelete] = React.useState<FilenameData>();
+  const toggleModal = () => {
+    setIsDeletionModalOpen(!isDeletionModalOpen);
+  };
+  const onModalConfirm = async (data?: any) => {
+    if (fileToDelete?.filename) {
+      console.log('Deleting File:', data.filename);
+      await api.deleteLogFile(fileToDelete?.filename);
+    }
+    setFileToDelete(undefined);
+    setIsDeletionModalOpen(false);
+    props.setFilename('');
+    props.refresh();
+  };
+  const promptDeleteFile = (row: FilenameData) => {
+    setFileToDelete(row);
+    setIsDeletionModalOpen(true);
+  };
+
   const buildTable = (rows: FilenameData[]) => {
     return (
       <List disablePadding style={listStyles.table} dense>
+        <ConfirmModal 
+          cancel={() => toggleModal()}
+          isOpen={isDeletionModalOpen}
+          setOpen={(v: boolean) => setIsDeletionModalOpen(v)}
+          data={fileToDelete}
+          text={fileToDelete ? `Delete file named ${fileToDelete?.filename}?` : 'Delete File?'}
+          confirm={(d?: any) => onModalConfirm(d)}
+        />
         {rows.map((row) => {
           return (
             <ListItem
@@ -51,12 +86,19 @@ export default function LogFileList(
               style={listStyles.row}
               key={`file-item-${row.id}`}
             >
+              <ListItemText primary={row.filename} />
+              <Box display="flex" columnGap={2} alignContent="flex-end">
               <ListItemButton>
-                <ListItemText primary={row.filename} />
                 {props.selectedFile && props.selectedFile === row.filename && (
                   <VisibilityIcon style={{ color: 'grey' }} />
                 )}
               </ListItemButton>
+              <ListItemButton>
+                {props.selectedFile && props.selectedFile === row.filename && (
+                  <DeleteForever onClick={() => promptDeleteFile(row)} style={{ color: 'grey' }} />
+                )}
+              </ListItemButton>
+              </Box>
             </ListItem>
           );
         })}

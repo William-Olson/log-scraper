@@ -30,16 +30,18 @@ function LogFilesSection(props: LogFilesSectionProps): React.ReactElement {
     }
   };
 
-  // fetch log files
+  const fetchLogFiles = () => api
+    .getLogList()
+    .then(({ log_files }) => log_files)
+    .then(setLogFiles);
+
+  // init log files
   const { logFiles, setLogFiles } = props;
   useEffect(() => {
     if (logFiles?.length > 0) {
       return;
     }
-    api
-      .getLogList()
-      .then(({ log_files }) => log_files)
-      .then(setLogFiles);
+    fetchLogFiles();
   }, [logFiles?.length, setLogFiles]);
 
   // handler for updating selected log file
@@ -65,6 +67,7 @@ function LogFilesSection(props: LogFilesSectionProps): React.ReactElement {
         <div>
           {logFiles && logFiles.length > 0 && (
             <LogFileList
+              refresh={() => fetchLogFiles()}
               selectedFile={props.selectedFile}
               setFilename={updateSelectedFile}
               logFiles={logFiles}

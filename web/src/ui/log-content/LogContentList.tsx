@@ -13,7 +13,7 @@ export default function LogContentList(props: LogContentListProps): React.ReactE
   const contentStyles: { [k: string]: CSSProperties} = {
     tableArea: {
       border: 'solid 1px rgba(0, 0, 0, 0.1)',
-      height: 'calc(100vh - 455px)',
+      height: 'calc(100vh - 440px)',
       overflow: 'auto'
     },
     table: {
