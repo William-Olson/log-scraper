@@ -1,4 +1,4 @@
-import React, { CSSProperties, useEffect, useState } from 'react';
+import React, { CSSProperties, useCallback, useEffect, useState } from 'react';
 import { Tab, Tabs, Typography } from '@mui/material';
 import DescriptionIcon from '@mui/icons-material/Description';
 import InfoIcon from '@mui/icons-material/Info';
@@ -30,19 +30,19 @@ function LogFilesSection(props: LogFilesSectionProps): React.ReactElement {
     }
   };
 
-  const fetchLogFiles = () => api
+  const { logFiles, setLogFiles } = props;
+  const fetchLogFiles = useCallback(() => api
     .getLogList()
     .then(({ log_files }) => log_files)
-    .then(setLogFiles);
+    .then(setLogFiles), [setLogFiles]);
 
   // init log files
-  const { logFiles, setLogFiles } = props;
   useEffect(() => {
     if (logFiles?.length > 0) {
       return;
     }
     fetchLogFiles();
-  }, [logFiles?.length, setLogFiles]);
+  }, [logFiles?.length, setLogFiles, fetchLogFiles]);
 
   // handler for updating selected log file
   const updateSelectedFile = (value: string) => {
