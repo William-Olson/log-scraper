@@ -5,11 +5,12 @@ let API_BASE_URL = ''; // just use host server
 if (process.env.NODE_ENV !== 'production') {
   // else use service at local port if dev mode
   API_BASE_URL = 'http://localhost:3333';
+  // and allow overriding in dev mode via environment
+  if (process.env.REACT_APP_LSUI_API_URL) {
+    API_BASE_URL = process.env.REACT_APP_LSUI_API_URL;
+  }
 }
 
-if (process.env.REACT_APP_LSUI_API_URL) {
-  API_BASE_URL = process.env.REACT_APP_LSUI_API_URL;
-}
 
 export interface ApiLogContent {
   page: number;

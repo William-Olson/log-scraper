@@ -69,6 +69,10 @@ build: lint web-build
 	@COMMENT='Building Rust Service' make -s flower-box
 	cargo build
 
+proxy-dev: build
+	@COMMENT='Running Web UI in Dev Mode with Proxy Path' make -s flower-box
+	@./scripts/proxy_dev_build.sh
+
 web-build: clean
 	@COMMENT='Building Web UI' make -s flower-box
 	@cd ./web && npm run pre-dev
