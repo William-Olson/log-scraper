@@ -15,7 +15,6 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-
 pub struct NewRelicLogItem {
     pub logger_name: String,
     pub request_id: String,
@@ -66,9 +65,9 @@ impl Clone for NewRelicLogItem {
     }
 }
 
-impl ToString for NewRelicLogItem {
-    fn to_string(&self) -> String {
+impl std::fmt::Display for NewRelicLogItem {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = serde_json::to_string(&self);
-        s.unwrap_or("".to_owned())
+        write!(f, "{}", s.unwrap_or("".to_owned()))
     }
 }

@@ -136,7 +136,7 @@ impl NewRelic {
 
     /// Helper for determining the log item with the latest timestamp in a list.
     /// Caution: panics! if the list is empty.
-    pub fn find_latest(&self, logs: &Vec<NewRelicLogItem>) -> NewRelicLogItem {
+    pub fn find_latest(&self, logs: &[NewRelicLogItem]) -> NewRelicLogItem {
         if logs.is_empty() {
             panic!("Unable to find latest log from empty list");
         }

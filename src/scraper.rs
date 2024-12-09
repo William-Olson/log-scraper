@@ -50,7 +50,11 @@ async fn attempt_sync(timestamp_from_memory: String) -> String {
         trace!("Reading from remote cache...");
         match caching::get_cached_val().await {
             Ok(last_seen) => {
-                info!("Found value from cache: {last_seen}");
+                if !last_seen.is_empty() {
+                    info!("Found value from cache: {last_seen}");
+                } else {
+                    info!("No value from cache was found")
+                }
                 last_seen
             }
             Err(err) => {
