@@ -23,6 +23,10 @@ start-container: clean-containers build-container
 	@COMMENT='Starting Docker Containers' make -s flower-box
 	./scripts/docker_dev_run.sh
 
+start-container-no-web: clean-containers build-container-no-web
+	@COMMENT='Starting Docker Containers' make -s flower-box
+	./scripts/docker_dev_run.sh
+
 compose-start: compose-cleanup build-containers
 	@COMMENT='Starting Compose Containers' make -s flower-box
 	docker-compose -f dev.docker-compose.yml up -d
@@ -52,6 +56,10 @@ build-container-ui:
 	./scripts/docker_web_build.sh
 
 build-container: lint web-build
+	@COMMENT='Building log-scraper Docker Container' make -s flower-box
+	./scripts/docker_build.sh
+
+build-container-no-web: lint
 	@COMMENT='Building log-scraper Docker Container' make -s flower-box
 	./scripts/docker_build.sh
 

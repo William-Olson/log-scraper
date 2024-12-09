@@ -1,12 +1,18 @@
 # -- compile time container --
 
-FROM rust:1.68 as build
+FROM rust:1.83 as build
 
 WORKDIR /usr/src/log-scraper
 
-# move src files into the container filesystem
+# build dependencies
 COPY ./Cargo.lock ./Cargo.lock
 COPY ./Cargo.toml ./Cargo.toml
+RUN mkdir src \
+    && echo "// dummy file" > ./src/lib.rs \
+    && cargo build
+RUN rm ./src/lib.rs
+
+# move src files into the container filesystem
 COPY ./src ./src
 
 # compile and obtain binaries
