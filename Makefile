@@ -15,6 +15,12 @@ tag: build-container
 		docker tag willko/log-scraper:latest willko/log-scraper:$(TAG) ; \
 	fi
 
+web-dependencies:
+	@if [ ! -d ./web/node_modules ]; then \
+		COMMENT='Installing Web Dependencies . . .' make -s flower-box; \
+		cd ./web && npm install && cd ..; \
+	fi
+
 with-docs: build docs
 	@COMMENT='Running Service Now . . .' make -s flower-box
 	cargo run
@@ -77,7 +83,7 @@ build: lint web-build
 	@COMMENT='Building Rust Service' make -s flower-box
 	cargo build
 
-web-build: clean
+web-build: clean web-dependencies
 	@COMMENT='Building Web UI' make -s flower-box
 	@cd ./web && npm run pre-dev
 
