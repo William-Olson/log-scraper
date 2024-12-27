@@ -7,6 +7,7 @@ import { ApiService } from '../../services/ApiService';
 
 const api = new ApiService();
 
+
 export interface LogFileListProps {
   setFilename: (val: string) => void;
   refresh: () => void;
@@ -18,18 +19,32 @@ interface FilenameData {
   id: number;
   filename: string;
   view: boolean;
+  date?: Date;
+}
+
+const filenameToFilenameData = (filename: string, index: number): FilenameData => {
+  const cleanDateString = (s: string) => s.replaceAll(/.*([1-9]\d\d\d-\d\d-\d\d).*/gim, '$1');
+  return {
+    id: index + 1,
+    filename,
+    view: true,
+    date: filename && cleanDateString(filename) ? new Date(cleanDateString(filename)) : undefined
+  };
 }
 
 export default function LogFileList(
   props: LogFileListProps
 ): React.ReactElement {
   // build list data
-  const rows: FilenameData[] = (props.logFiles || []).filter(x => x).map((l, i) => ({
-    id: i + 1,
-    filename: l,
-    view: true,
-  }));
+  let rows: FilenameData[] = (props.logFiles || [])
+    .filter(x => x)
+    .map(filenameToFilenameData);
 
+
+  if (rows.every(r => !!r.date)) {
+    rows = rows.sort((a, b) => a.date! < b.date! ? 1 : -1);
+  }
+  
   const listStyles: { [k: string]: CSSProperties } = {
     table: {
       width: '100%',
