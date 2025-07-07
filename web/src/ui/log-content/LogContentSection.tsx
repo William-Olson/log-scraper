@@ -38,9 +38,6 @@ export default function LogContentSection(
   let [logData, setLogData] = useState<ParsedApiLogs>();
 
   const setLogs = () => {
-    if (logData && props.filename !== logData.filename) {
-      paginationModel.page = 0;
-    }
     fetchLogData(
       props.filename,
       paginationModel.page + 1,
@@ -51,7 +48,14 @@ export default function LogContentSection(
     });
   };
 
+  const resetPagination = () => {
+      if (logData && props.filename !== logData.filename) {
+        setPaginationModel(defaultPaging);
+      }
+  };
+
   useEffect(setLogs, [paginationModel, props.filename]);
+  useEffect(resetPagination, [props.filename, logData]);
   return (
     <div>
       <LogContentHeader filename={props.filename} />
