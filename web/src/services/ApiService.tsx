@@ -12,6 +12,7 @@ if (process.env.REACT_APP_LSUI_API_URL) {
 }
 
 export interface ApiLogContent {
+  filename: string;
   page: number;
   page_size: number;
   total: number;
@@ -49,12 +50,12 @@ export class ApiService {
     page: number,
     pageSize: number
   ): Promise<ApiLogContent> {
-    return (
+    return Object.assign({ filename }, (
       await axios.request({
         url: `${API_BASE_URL}/logs/${filename}?page=${page}&page_size=${pageSize}`,
         method: 'GET',
       })
-    ).data;
+    ).data);
   }
 
   /**

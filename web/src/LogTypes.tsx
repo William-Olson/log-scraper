@@ -23,6 +23,7 @@ export const LogDataKeys: (keyof LogMessageData)[] = [
 ];
 
 export interface ParsedApiLogs {
+  filename: string;
   page: number;
   page_size: number;
   total: number;

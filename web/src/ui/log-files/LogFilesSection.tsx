@@ -7,6 +7,9 @@ import { ApiService } from '../../services/ApiService';
 import { TabPanel } from './TabPanel';
 import pJson from '../../../package.json';
 
+const LOG_FILE_REGEXP = /.*_\d\d\d\d-\d\d-\d\d[.].*/gim;
+const LOG_FILE_NAME_DELIMITER = '_';
+
 const api = new ApiService();
 
 export interface LogFilesSectionProps {
@@ -33,7 +36,19 @@ function LogFilesSection(props: LogFilesSectionProps): React.ReactElement {
   const { logFiles, setLogFiles } = props;
   const fetchLogFiles = useCallback(() => api
     .getLogList()
-    .then(({ log_files }) => log_files)
+    // sort the log files by dates in the names
+    .then(({ log_files }) => log_files.sort((entryA, entryB) => {
+      const isLogFile = (s: string = '') => LOG_FILE_REGEXP.test(s);
+      if (!isLogFile(entryA) || !isLogFile(entryB)) {
+        return entryA < entryB ? 1 : (entryA === entryB ? 0 : -1);
+      }
+      const fileANoExt = entryA.split('.')[0] || '';
+      const fileBNoExt = entryB.split('.')[0] || '';
+      const fileADate = new Date((fileANoExt || '').split(LOG_FILE_NAME_DELIMITER).pop() as string);
+      const fileBDate = new Date((fileBNoExt || '').split(LOG_FILE_NAME_DELIMITER).pop() as string);
+
+      return fileADate > fileBDate ? 1 : -1;
+    }))
     .then(setLogFiles), [setLogFiles]);
 
   // init log files

@@ -48,7 +48,14 @@ export default function LogContentSection(
     });
   };
 
+  const resetPagination = () => {
+      if (logData && props.filename !== logData.filename) {
+        setPaginationModel(defaultPaging);
+      }
+  };
+
   useEffect(setLogs, [paginationModel, props.filename]);
+  useEffect(resetPagination, [props.filename, logData]);
   return (
     <div>
       <LogContentHeader filename={props.filename} />
