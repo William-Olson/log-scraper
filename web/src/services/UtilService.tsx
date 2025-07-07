@@ -17,6 +17,7 @@ export class LogUtilService {
     const offset = (logDataResp.page - 1) * logDataResp.page_size;
     const converter = this.boolBranchMap(this.isJsonObjectString, this.toJson, this.toDefaultLogMessageData);
     return {
+      filename: logDataResp.filename,
       results: logDataResp.results
         .map(converter)
         .map((j, i) => ({ ...j, id: i + 1 + offset })) as Array<LogMessageData>,

@@ -38,6 +38,9 @@ export default function LogContentSection(
   let [logData, setLogData] = useState<ParsedApiLogs>();
 
   const setLogs = () => {
+    if (logData && props.filename !== logData.filename) {
+      paginationModel.page = 0;
+    }
     fetchLogData(
       props.filename,
       paginationModel.page + 1,
